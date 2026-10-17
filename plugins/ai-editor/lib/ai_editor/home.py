@@ -2000,10 +2000,11 @@ def make_handler(token):
                         if hk.lower() not in ("transfer-encoding", "connection"):
                             self.send_header(hk, hv)
                     self.end_headers()
-                    shutil.copyfileobj(resp, self.wfile, length=65536)
+                    if self.command != "HEAD":
+                        shutil.copyfileobj(resp, self.wfile, length=65536)
                     return
 
-                raw_body = resp.read()
+                raw_body = resp.read() if self.command != "HEAD" else b""
                 if path_only == "/state" and resp.status == 200:
                     try:
                         s_data = json.loads(raw_body.decode("utf-8"))
@@ -2026,7 +2027,8 @@ def make_handler(token):
                     self.send_header("Set-Cookie", f"ave_review_token={token}; Path=/; SameSite=Lax")
                     self.send_header("Set-Cookie", f"ave-review-{port}={token}; Path=/; SameSite=Lax")
                 self.end_headers()
-                self.wfile.write(raw_body)
+                if self.command != "HEAD":
+                    self.wfile.write(raw_body)
             except Exception as e:
                 self.send(502, {"error": f"Review proxy error: {str(e)}"})
             finally:
