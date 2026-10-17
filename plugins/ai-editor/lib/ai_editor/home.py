@@ -1959,6 +1959,21 @@ def make_handler(token):
                 dname = Path(unquote(m.group(1))).name
                 if dname in _REVIEW_SERVERS:
                     return _REVIEW_SERVERS[dname]
+                try:
+                    d = (Path(read()["root"]) / "edits" / dname).resolve()
+                    if d.exists() and (d / "review.json").exists():
+                        url = review_url(d)
+                        if url:
+                            rm = re.search(r":(\d+)/\?t=([\w-]+)", url)
+                            if rm:
+                                r_port = int(rm.group(1))
+                                r_tok = rm.group(2)
+                                _REVIEW_SERVERS[d.name] = (r_port, r_tok)
+                                _LATEST_REVIEW["port"] = r_port
+                                _LATEST_REVIEW["token"] = r_tok
+                                return r_port, r_tok
+                except Exception:
+                    pass
             if "ave_review_port=" in cookie_str:
                 for c in cookie_str.split(";"):
                     c = c.strip()
