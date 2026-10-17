@@ -1116,7 +1116,17 @@ function copyText(t,el){try{navigator.clipboard.writeText(t)}catch(e){}el.innerH
 // "Try it with a sample video": the repo's public sample take, downloaded once, then the real flow with its decisions shipped
 async function trySample(){if((ui.sample||{}).busy)return;ui.sample={busy:1};render();if(!GS().setup&&!latest('setup')){await post('/job',{type:'setup'});if(!S.listening)await connectClaude()}const r=await post('/sample',{});ui.sample=r._ok?null:{msg:r.msg||'That did not work. Try again.'};await load();if(r._ok)toEditor(r);else render()}
 const sampleRow=()=>{const b=(ui.sample||{}).busy;return `<div class="row smprow" style="gap:12px;flex-wrap:wrap"><span class="t2" style="color:var(--t2);font-size:14px">No footage handy?</span><button class="b2" ${b?'disabled':''} onclick="trySample()">${b?'Getting the sample video...':'Try it with a sample video'}</button></div>${(ui.sample||{}).msg?`<div class="msg bad">${CROSS}<span>${esc(ui.sample.msg)}</span></div>`:''}`};
-function toEditor(r){const e=(r.edits||[])[0];if(e){location.href='/review?dir='+encodeURIComponent(e);return}loadLib().then(()=>rgo('videos'))}
+function getAuthToken(){
+  let t = '';
+  try { t = (new URLSearchParams(location.search)).get('t') || ''; } catch(e) {}
+  if (t) { try { localStorage.setItem('ave_token', t); } catch(e) {} return t; }
+  try { return localStorage.getItem('ave_token') || ''; } catch(e) { return ''; }
+}
+function reviewHref(dir){
+  const t = getAuthToken();
+  return '/review?dir=' + encodeURIComponent(dir) + (t ? '&t=' + encodeURIComponent(t) : '');
+}
+function toEditor(r){const e=(r.edits||[])[0];if(e){location.href=reviewHref(e);return}loadLib().then(()=>rgo('videos'))}
 
 // ---------------------------------------------------------------- returning user (Paper "J launcher + pick")
 // New video (pick clips) -> Pick a style -> Making your video; Home (welcome back), Your videos, My style, Settings.
@@ -1846,7 +1856,7 @@ const vJob=v=>{const j=v.job&&S.jobs.find(x=>x.id===v.job);return j&&(j.state===
 // the editor (round 0 opens the moment Make my video is pressed), else Your videos
 function openVideo(dir){
   const v=(L?L.videos:[]).find(x=>x.dir===dir);if(!v)return;
-  if(v.review){location.href='/review?dir='+encodeURIComponent(v.dir);return}
+  if(v.review){location.href=reviewHref(v.dir);return}
   rgo('videos');
 }
 const goAttrs=v=>`role="button" tabindex="0" onclick="openVideo(${esc(JSON.stringify(v.dir))})" onkeydown="if(event.key==='Enter'&&event.target===this)openVideo(${esc(JSON.stringify(v.dir))})"`;

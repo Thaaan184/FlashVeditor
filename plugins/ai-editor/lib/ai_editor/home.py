@@ -2046,10 +2046,13 @@ def make_handler(token):
                     self.send_header(hk, hv)
 
                 if is_page:
-                    self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; SameSite=Lax")
-                    self.send_header("Set-Cookie", f"ave_review_port={port}; Path=/; SameSite=Lax")
-                    self.send_header("Set-Cookie", f"ave_review_token={token}; Path=/; SameSite=Lax")
-                    self.send_header("Set-Cookie", f"ave-review-{port}={token}; Path=/; SameSite=Lax")
+                    is_https = self.headers.get("X-Forwarded-Proto") == "https"
+                    sec = "; Secure" if is_https else ""
+                    self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; SameSite=Lax{sec}")
+                    self.send_header("Set-Cookie", f"ave_token={token}; Path=/; SameSite=Lax{sec}")
+                    self.send_header("Set-Cookie", f"ave_review_port={port}; Path=/; SameSite=Lax{sec}")
+                    self.send_header("Set-Cookie", f"ave_review_token={token}; Path=/; SameSite=Lax{sec}")
+                    self.send_header("Set-Cookie", f"ave-review-{port}={token}; Path=/; SameSite=Lax{sec}")
                 self.end_headers()
                 if self.command != "HEAD":
                     self.wfile.write(raw_body)
@@ -2073,8 +2076,12 @@ def make_handler(token):
                 c.load(self.headers.get("Cookie") or "")
             except Exception:
                 pass
-            got = c[self.cookie_name()].value if self.cookie_name() in c else ""
-            return any(hmac.compare_digest(v.encode(), token.encode()) for v in (q, got, ref_q) if v)
+            cookie_vals = [m.value for m in c.values()]
+            candidates = [q, ref_q] + cookie_vals
+            auth_hdr = self.headers.get("Authorization", "")
+            if auth_hdr.lower().startswith("bearer "):
+                candidates.append(auth_hdr[7:].strip())
+            return any(hmac.compare_digest(v.encode(), token.encode()) for v in candidates if v)
 
         def send(self, code, body, ctype="application/json", cookie=False, cache="no-store"):
             if isinstance(body, (dict, list)):
@@ -2083,7 +2090,10 @@ def make_handler(token):
                 body = body.encode()
             self.send_response(code)
             if cookie:
-                self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; HttpOnly; SameSite=Strict")
+                is_https = self.headers.get("X-Forwarded-Proto") == "https"
+                sec = "; Secure" if is_https else ""
+                self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; HttpOnly; SameSite=Lax{sec}")
+                self.send_header("Set-Cookie", f"ave_token={token}; Path=/; SameSite=Lax{sec}")
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", cache)

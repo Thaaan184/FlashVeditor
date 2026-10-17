@@ -658,14 +658,24 @@ const D=()=>v.duration||data().duration||1;
 
 // Redraw only when the state changed: redrawing every poll replaced the buttons under the pointer.
 let lastRaw='';
+function getReviewToken(){
+  let t = '';
+  try { t = (new URLSearchParams(location.search)).get('t') || ''; } catch(e) {}
+  if (t) { try { localStorage.setItem('ave_token', t); } catch(e) {} return t; }
+  try { return localStorage.getItem('ave_token') || ''; } catch(e) { return ''; }
+}
 document.getElementById('homebtn').onclick=()=>{
-  if(S&&S.home){location.href=S.home+'#videos';return}   // the same tab: back to the editor's window at its fixed address
-  location.href='/#videos';
+  const t = getReviewToken();
+  const q = t ? '?t=' + encodeURIComponent(t) : '';
+  if(S&&S.home){location.href=S.home+q+'#videos';return}
+  location.href='/' + q + '#videos';
 };
 // the rail: the home window's views at its address; without one, the items that cannot work are hidden
 function renderRail(){
+  const t = getReviewToken();
+  const q = t ? '?t=' + encodeURIComponent(t) : '';
   document.body.classList.toggle('nohome',!S.home);
-  document.querySelectorAll('.rail [data-view]').forEach(a=>{a.href=S.home?S.home+'#'+a.dataset.view:'#'});
+  document.querySelectorAll('.rail [data-view]').forEach(a=>{a.href='/' + q + '#'+a.dataset.view});
   const u=S.update,ub=$('railupd');ub.hidden=!u;
   if(u&&u.busy)updWas=true;if(u&&updWas&&!u.busy)updating=updWas=false;   // the update ended (done: this page restarts on it)
   if(u){ub.disabled=!!u.busy||updating;$('railupdt').textContent=u.busy||updating?'Updating':u.error?'Try again':'Update';ub.title=u.busy||updating?'Installing the new version. This page restarts on it.':u.error||'Install cooked. '+(u.latest||'')}
