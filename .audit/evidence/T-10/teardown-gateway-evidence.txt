@@ -1,0 +1,9 @@
+=== T-10 CREATOR-TEARDOWN VISUAL LOOK PASS ===
+Gateway Base URL: http://127.0.0.1:20128
+Model ID: ag/gemini-3.8-flash-high
+Tokens spent: 4292
+Closest Google Font: Montserrat
+Caption entrance: none
+Motion personality: punchy
+Graphics style: screen recordings with punch zooms, black banner text callouts, paper rip textured border matte, camera REC HUD overlay
+style.json generated: True (keys: ['handle', 'look', 'captions'])
