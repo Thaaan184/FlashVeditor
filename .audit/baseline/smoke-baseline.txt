@@ -1,0 +1,1 @@
+SMOKE OK on Linux: 10 stills, both renders 4 s

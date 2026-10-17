@@ -1,0 +1,10 @@
+task: T-01
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - doctor: Ready. All core checks (python, ffmpeg, node, git, venv, whisper, remotion, motion clips) ok.
+  - lock_files_diff: clean (0 changes to requirements.lock and package-lock.json)
+  - smoke_test: SMOKE OK on Linux (10 stills, both renders 4 s)
+  - check_plugins: plugins ok
