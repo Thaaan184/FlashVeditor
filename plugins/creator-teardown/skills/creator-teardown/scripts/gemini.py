@@ -52,6 +52,29 @@ import _progress  # noqa: E402
 from fetch import OUT_ROOT, slug  # noqa: E402
 from transcribe import find_key  # noqa: E402
 
+
+def _load_env_file():
+    """Populate os.environ from KEY_FILE if present, without overwriting explicit env vars."""
+    home = Path(os.environ.get("AI_EDITOR_HOME", Path.home() / ".ai-video-editor"))
+    key_file = (home / ".env" if os.environ.get("AI_EDITOR_HOME", "").strip()
+                else Path.home() / ".config" / "creator-teardown" / ".env")
+    if key_file.exists():
+        try:
+            for line in key_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                if k and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+
+
+_load_env_file()
+
 # Base configuration from environment with defaults
 BASE = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
 VER = os.environ.get("GEMINI_API_VERSION", "v1beta").strip("/")
@@ -474,10 +497,16 @@ def demo():
     # gateway helpers check
     assert api_url("models/test").endswith("/models/test")
     assert upload_url().endswith("/upload/v1beta/files")
-    assert "x-goog-api-key" in headers("mykey")
-    os.environ["GEMINI_AUTH_MODE"] = "bearer"
-    assert headers("mytoken") == {"Content-Type": "application/json", "Authorization": "Bearer mytoken"}
-    os.environ.pop("GEMINI_AUTH_MODE", None)
+    saved_auth = os.environ.pop("GEMINI_AUTH_MODE", None)
+    try:
+        assert "x-goog-api-key" in headers("mykey")
+        os.environ["GEMINI_AUTH_MODE"] = "bearer"
+        assert headers("mytoken") == {"Content-Type": "application/json", "Authorization": "Bearer mytoken"}
+    finally:
+        if saved_auth is not None:
+            os.environ["GEMINI_AUTH_MODE"] = saved_auth
+        else:
+            os.environ.pop("GEMINI_AUTH_MODE", None)
     r2 = dict(r1, closest_google_font="Inter", graphics_style=["real screenshots"],
               not_generic=["White one-word captions low on the chest", "screenshots slide up"])
     r3 = dict(r1, graphics_style=["memes"])
