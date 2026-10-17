@@ -15,3 +15,7 @@ eval-results/
 /*.MOV
 .claude/settings.local.json
 .context/
+.env
+*.env
+!.env.example
+

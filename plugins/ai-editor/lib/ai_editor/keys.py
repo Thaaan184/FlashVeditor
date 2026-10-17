@@ -135,11 +135,14 @@ def _get(url, headers):
 def verify(name, key):
     """(ok, message). Each check is a free listing call: nothing is billed. A key without its vendor's
     fixed prefix is refused here, so text that is not that key never leaves the computer."""
-    if name in PREFIX and not key.startswith(PREFIX[name]):
+    base = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+    ver = os.environ.get("GEMINI_API_VERSION", "v1beta").strip("/")
+    is_custom_gateway = bool(os.environ.get("GEMINI_BASE_URL")) or os.environ.get("GEMINI_AUTH_MODE") == "bearer"
+    if name in PREFIX and not is_custom_gateway and not key.startswith(PREFIX[name]):
         return False, f"this is not a {NAMES[name]} key, so nothing was sent. {NAMES[name]} keys start with {' or '.join(PREFIX[name])}"
     if name == "gemini":
-        code, body = _get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",
-                          {"x-goog-api-key": key})
+        h = {"Authorization": f"Bearer {key}"} if os.environ.get("GEMINI_AUTH_MODE") == "bearer" else {"x-goog-api-key": key}
+        code, body = _get(f"{base}/{ver}/models?pageSize=1", h)
     else:
         code, body = _get("https://api.elevenlabs.io/v1/user", {"xi-api-key": key})
         # A key restricted to Speech to Text (what setup asks for) may not read /v1/user.
