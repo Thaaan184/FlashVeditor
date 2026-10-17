@@ -1,0 +1,18 @@
+=== T-06 MODEL MAPPING AUDIT VERIFICATION ===
+Base URL: http://127.0.0.1:20128
+Target Aliases: {'haiku': 'ag/gemini-3.8-flash-high', 'sonnet': 'ag/claude-sonnet-4-6', 'opus': 'ag/claude-opus-4-6-thinking', 'main': 'ag/claude-sonnet-4-6'}
+
+[PASS] Role: HAIKU  -> Model: ag/gemini-3.8-flash-high       (HTTP 200, 7.48s)
+       Response snippet: event: message_start data: {"type":"message_start","message":{"id":"R4vTariZA8D4juMPkJXpyAU","type":"message","role":"as
+[PASS] Role: SONNET -> Model: ag/claude-sonnet-4-6           (HTTP 200, 0.738s)
+       Response snippet: event: message_start data: {"type":"message_start","message":{"id":"req_vrtx_011Cg7zm6JTycDv1PhYEzt8s","type":"message",
+[PASS] Role: OPUS   -> Model: ag/claude-opus-4-6-thinking    (HTTP 200, 1.685s)
+       Response snippet: event: message_start data: {"type":"message_start","message":{"id":"req_vrtx_011Cg7zm9qYe41gagNR7Mp88","type":"message",
+[PASS] Role: MAIN   -> Model: ag/claude-sonnet-4-6           (HTTP 200, 0.819s)
+       Response snippet: event: message_start data: {"type":"message_start","message":{"id":"req_vrtx_011Cg7zmJPzs3x4LXe278G7a","type":"message",
+
+=== NEGATIVE TEST: UNMAPPED MODELS RETURN 404 ===
+[EXPECTED 404] Unmapped claude-3-5-haiku-20241022 correctly refused: HTTP 404
+[EXPECTED 404] Unmapped claude-3-5-sonnet-20241022 correctly refused: HTTP 404
+
+=== T-06 RESULT: ALL MODEL MAPPINGS VERIFIED ZERO 404 ON MAPPED ALIASES ===

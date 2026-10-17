@@ -1,0 +1,12 @@
+task: T-06
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - haiku_mapping: PASS (ag/gemini-3.8-flash-high -> HTTP 200, streaming OK)
+  - sonnet_mapping: PASS (ag/claude-sonnet-4-6 -> HTTP 200, streaming OK)
+  - opus_mapping: PASS (ag/claude-opus-4-6-thinking -> HTTP 200, streaming OK)
+  - main_mapping: PASS (ag/claude-sonnet-4-6 -> HTTP 200, streaming OK)
+  - negative_test_404: PASS (unmapped models return HTTP 404 as expected)
+  - log_clean: PASS (0 keys in .audit/evidence/T-06/model-mapping-log.txt)
