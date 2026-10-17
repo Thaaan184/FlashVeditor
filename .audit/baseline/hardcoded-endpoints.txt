@@ -1,0 +1,68 @@
+./plugins/ai-editor/skills/setup/scripts/setup.py:23:  python3 setup.py setkey gemini|elevenlabs   save an API key (asks, hides what you type),
+./plugins/ai-editor/skills/setup/scripts/setup.py:36:  python3 setup.py later <step>   save an optional step for later (gemini elevenlabs style modal matte)
+./plugins/ai-editor/skills/setup/scripts/setup.py:392:            net.urlopen(urllib.request.Request("https://api.elevenlabs.io", method="HEAD"), 3).close()
+./plugins/ai-editor/skills/setup/scripts/setup.py:501:    ("elevenlabs", "found: Scribe transcripts keep every filler",
+./plugins/ai-editor/skills/setup/scripts/setup.py:505:            "elevenlabs": "https://elevenlabs.io/app/settings/api-keys"}
+./plugins/ai-editor/skills/setup/scripts/setup.py:1288:    assert key_line("gemini", "looks", "x", "the GEMINI_API_KEY variable").startswith("ok "), "found key row"
+./plugins/ai-editor/skills/setup/scripts/setup.py:1341:        "gemini", "elevenlabs", "style", "modal", "matte"]
+./plugins/ai-editor/skills/setup/references/keys.md:23:- **Get it:** https://elevenlabs.io/app/settings/api-keys (sign up first at
+./plugins/ai-editor/skills/setup/references/keys.md:24:  https://elevenlabs.io/app/sign-up), create a key. Keep **Restrict Key** on, allow **Speech to
+./plugins/ai-editor/skills/setup/references/keys.md:26:- **Save:** `setkey elevenlabs`.
+./plugins/ai-editor/skills/setup/SKILL.md:38:(`gemini`, `elevenlabs`, `modal`, `style`, `matte`) and say "Saved. Say *finish setup*
+./plugins/ai-editor/skills/setup/SKILL.md:134:- ElevenLabs: https://elevenlabs.io/app/settings/api-keys (sign up first at https://elevenlabs.io/app/sign-up)
+./plugins/ai-editor/skills/setup/SKILL.md:150:`<name>` is `gemini` or `elevenlabs`. `setkey` sends one free test request before saving
+./plugins/ai-editor/skills/cut/scripts/transcribe.py:106:    return keys.get("elevenlabs")[0]
+./plugins/ai-editor/skills/cut/scripts/transcribe.py:253:    req = urllib.request.Request("https://api.elevenlabs.io/v1/speech-to-text", data=bytes(body),
+./plugins/ai-editor/skills/product-video/scripts/sound.py:489:    req = urllib.request.Request("https://api.elevenlabs.io/v1/music?output_format=mp3_44100_128",
+./plugins/ai-editor/skills/product-video/scripts/product.py:566:                          vo=d / vo if vo else None, own=d / own if own else None, eleven_key=keys_get("elevenlabs"))
+./plugins/ai-editor/skills/product-video/scripts/product.py:621:                          vo=d / vo if vo else None, own=d / own if own else None, eleven_key=keys_get("elevenlabs"))
+./plugins/ai-editor/skills/product-video/scripts/product.py:1120:    key, _ = keys.get("elevenlabs")
+./plugins/ai-editor/skills/product-video/scripts/product.py:1123:    req = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{voice}?output_format=mp3_44100_128",
+./plugins/ai-editor/skills/product-video/references/brief.md:9:ElevenLabs Music with their key (offer only if `keys.get("elevenlabs")` finds one; their terms allow
+./plugins/ai-editor/skills/product-video/audio/LICENSES.md:28:| ElevenLabs Music (`--music eleven`, the user's own key, $0.15 a minute, 2026-07) | Eleven Music Model-Specific Terms, last updated 2026-05-26, https://elevenlabs.io/eleven-music-model-specific-terms: "All online and offline commercial use permitted, except film, TV, radio, & Studio Games" on self-serve plans; resale and redistribution prohibited on self-serve; attribution required on the free plan | the track lives in their project's `audio/`, never in this repo; fine for a social or site video, not a TV spot |
+./plugins/ai-editor/lib/ai_editor/keys.py:37:VARS = {"gemini": "GEMINI_API_KEY", "elevenlabs": "ELEVENLABS_API_KEY"}
+./plugins/ai-editor/lib/ai_editor/keys.py:41:NAMES = {"gemini": "Gemini", "elevenlabs": "ElevenLabs"}
+./plugins/ai-editor/lib/ai_editor/keys.py:45:    """(key, where it came from) or (None, None). `name` is gemini or elevenlabs.
+./plugins/ai-editor/lib/ai_editor/keys.py:141:        code, body = _get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1",
+./plugins/ai-editor/lib/ai_editor/keys.py:144:        code, body = _get("https://api.elevenlabs.io/v1/user", {"xi-api-key": key})
+./plugins/ai-editor/lib/ai_editor/keys.py:162:        save("elevenlabs", "a" * 24, f)
+./plugins/ai-editor/lib/ai_editor/keys.py:167:                                                 f"GEMINI_API_KEY=AIza{'c' * 24}\n")   # the old line is kept, never read
+./plugins/ai-editor/lib/ai_editor/keys.py:171:        os.environ.pop("GEMINI_API_KEY", None)
+./plugins/ai-editor/lib/ai_editor/keys.py:173:        assert save("elevenlabs", "d" * 24) == f
+./plugins/ai-editor/lib/ai_editor/keys.py:184:        assert "GEMINI_API_KEY" not in f.read_text(encoding="utf-8") and "ELEVENLABS_API_KEY" in f.read_text(encoding="utf-8")
+./plugins/ai-editor/lib/ai_editor/keys.py:195:            assert verify("elevenlabs", "x" * 32)[0]   # no fixed prefix
+./plugins/ai-editor/lib/ai_editor/keys.py:205:            assert get("elevenlabs") == (None, None), "read a key from the working folder's .env"
+./plugins/ai-editor/lib/ai_editor/keys.py:213:                g = save("elevenlabs", "f" * 24, Path(d) / "new" / ".env")
+./plugins/ai-editor/lib/ai_editor/home.py:3079:        r = post("/key", {"name": "elevenlabs", "value": "x" * 32})
+./plugins/ai-editor/lib/ai_editor/home.py:3084:    assert st["keys"]["gemini"]["set"] and not st["keys"]["elevenlabs"]["set"] and "typesafe" not in st["keys"]
+./plugins/ai-editor/lib/ai_editor/home.py:3089:    keys.save("elevenlabs", "sk_" + "e" * 30)
+./plugins/ai-editor/lib/ai_editor/home.py:3090:    assert get("/state")["keys"]["elevenlabs"]["check"] is None   # saved elsewhere: never checked here
+./plugins/ai-editor/lib/ai_editor/home.py:3100:    assert not st["keys"]["gemini"]["set"] and st["keys"]["elevenlabs"]["set"] and keys.get("gemini") == (None, None)
+./plugins/ai-editor/lib/ai_editor/home.py:3101:    os.environ["GEMINI_API_KEY"] = "AIza" + "v" * 35
+./plugins/ai-editor/lib/ai_editor/home.py:3108:        os.environ.pop("GEMINI_API_KEY")
+./plugins/ai-editor/remotion/package-lock.json:2231:    "node_modules/@remotion/elevenlabs": {
+./plugins/ai-editor/remotion/package-lock.json:2233:      "resolved": "https://registry.npmjs.org/@remotion/elevenlabs/-/elevenlabs-4.0.530.tgz",
+./plugins/ai-editor/remotion/package-lock.json:2479:        "@remotion/elevenlabs": "4.0.530",
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:272:    gkey, gwhere = find_key("GEMINI_API_KEY")
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:305:    name, var, where = (("Gemini", "GEMINI_API_KEY", "aistudio.google.com/apikey") if args.gemini
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:307:                              "Developers > API Keys on elevenlabs.io"))
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:907:        save_key("GEMINI_API_KEY", "b" * 24, f)
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:908:        save_key("GEMINI_API_KEY", "c" * 24, f)
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:909:        assert f.read_text(encoding="utf-8") == f"ELEVENLABS_API_KEY={'a' * 24}\nGEMINI_API_KEY={'c' * 24}\n"
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:915:                save_key("GEMINI_API_KEY", "d" * 24, Path(d) / "new.env")
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:920:        (Path(d) / ".env").write_text(f"GEMINI_API_KEY={'e' * 24}\n", encoding="utf-8")
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:921:        cwd, saved = os.getcwd(), os.environ.pop("GEMINI_API_KEY", None)
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:924:            assert find_key("GEMINI_API_KEY")[1] != str(Path.cwd() / ".env"), "read the working folder's .env"
+./plugins/creator-teardown/skills/creator-teardown/scripts/fetch.py:928:                os.environ["GEMINI_API_KEY"] = saved
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:21:Key: GEMINI_API_KEY in the environment, or ~/.config/creator-teardown/.env
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:25:($0.30) if a key cannot use it; GEMINI_MODEL overrides. A 60 s video at 1 fps, low
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:56:MODELS = [os.environ["GEMINI_MODEL"]] if os.environ.get("GEMINI_MODEL") else \
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:59:API = "https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:279:    key, _ = find_key("GEMINI_API_KEY")
+./plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py:331:    key, _ = find_key("GEMINI_API_KEY")
+./plugins/creator-teardown/skills/creator-teardown/scripts/transcribe.py:49:API_URL = "https://api.elevenlabs.io/v1/speech-to-text"
+./plugins/creator-teardown/skills/creator-teardown/scripts/transcribe.py:69:    ELEVENLABS_API_KEY (transcripts) or GEMINI_API_KEY (the look pass)."""
+./plugins/creator-teardown/skills/creator-teardown/references/setup.md:48:1. Sign up at elevenlabs.io. The free plan is fine: it includes 4 hours 30
+./RELEASING.md:90:dispatch only, and only when the repo has an `ANTHROPIC_API_KEY` secret. Add the secret under
+./tests/check_plugins.py:21:            "https://elevenlabs.io/app/settings/api-keys", "https://modal.com/signup")
+./CHANGELOG.md:2003:  the repo has an `ANTHROPIC_API_KEY` secret. Headless eval runs have no AskUserQuestion tool, so

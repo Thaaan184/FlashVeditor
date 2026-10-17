@@ -1,0 +1,5 @@
+tests/
+.audit/contract.md
+.audit/protected-paths.txt
+.audit/guard.py
+.claude/agents/
