@@ -1,0 +1,32 @@
+services:
+  flashveditor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flashveditor
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "47821:47821"
+      - "47822-47835:47822-47835"
+    environment:
+      # 9Router local gateway endpoints
+      - GEMINI_BASE_URL=http://host.docker.internal:20128
+      - GEMINI_API_VERSION=v1beta
+      - GEMINI_AUTH_MODE=bearer
+      - GEMINI_MODEL=ag/gemini-3.8-flash-high
+      - GEMINI_API_KEY=FlashVeditor
+      # Claude Code / Anthropic settings (jika menggunakan agen)
+      - ANTHROPIC_BASE_URL=http://host.docker.internal:20128
+      - ANTHROPIC_AUTH_TOKEN=FlashVeditor
+      - ANTHROPIC_DEFAULT_HAIKU_MODEL=ag/gemini-3.8-flash-high
+      - ANTHROPIC_DEFAULT_SONNET_MODEL=ag/claude-sonnet-4-6
+      - ANTHROPIC_DEFAULT_OPUS_MODEL=ag/claude-opus-4-6-thinking
+      # FlashVeditor Server Settings
+      - AI_EDITOR_HOST=0.0.0.0
+      - AI_EDITOR_LIBRARY=/library
+      - AI_EDITOR_ALLOWED_HOSTS=localhost,127.0.0.1,host.docker.internal
+    volumes:
+      - ./library:/library
+      - ./edits:/edits

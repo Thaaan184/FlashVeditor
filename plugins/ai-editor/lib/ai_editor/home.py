@@ -1947,7 +1947,11 @@ def make_handler(token):
 
         def authorized(self):
             host = (self.headers.get("Host") or "").split(":")[0]
-            if host not in ("127.0.0.1", "localhost"):   # DNS rebinding: another name pointing here
+            allowed = {"127.0.0.1", "localhost", "host.docker.internal"}
+            extra = os.environ.get("AI_EDITOR_ALLOWED_HOSTS")
+            if extra:
+                allowed.update(h.strip() for h in extra.split(",") if h.strip())
+            if host not in allowed:   # DNS rebinding: another name pointing here
                 return False
             q = parse_qs(urlsplit(self.path).query).get("t", [""])[0]
             c = SimpleCookie()
@@ -2891,15 +2895,16 @@ class Server(ThreadingHTTPServer):
 
 def bind(handler, port=None):
     """PORT, or the port remembered from last time, else the next free one. port=0: any free port (tests)."""
+    h = os.environ.get("AI_EDITOR_HOST", "127.0.0.1")
     if port == 0:
-        return Server(("127.0.0.1", 0), handler)
+        return Server((h, 0), handler)
     first = port or read().get("port") or PORT
     for p in dict.fromkeys([first] + list(range(PORT, PORT + 20))):
         try:
-            return Server(("127.0.0.1", p), handler)
+            return Server((h, p), handler)
         except OSError:
             continue
-    return Server(("127.0.0.1", 0), handler)
+    return Server((h, 0), handler)
 
 
 def serve(root=None, port=None, open_browser=True):
@@ -2917,7 +2922,9 @@ def serve(root=None, port=None, open_browser=True):
     _SRV[:] = [srv]
     if port != 0:
         update(lambda d: d.__setitem__("port", srv.server_address[1]))
-    url = f"http://127.0.0.1:{srv.server_address[1]}/?t={token}"
+    h = os.environ.get("AI_EDITOR_HOST", "127.0.0.1")
+    disp_host = "127.0.0.1" if h in ("127.0.0.1", "0.0.0.0") else h
+    url = f"http://{disp_host}:{srv.server_address[1]}/?t={token}"
     (home() / ".server").write_text(url, encoding="utf-8")
     update(drop_modal_runs)
     askhook.register(srv, url, "home", asks_for, asks_dir)

@@ -1618,17 +1618,19 @@ def serve(folder, port=0, open_browser=True):
             show(url, folder)
         return None, url
     token, want, last = secrets.token_urlsafe(32), port, folder / "review" / ".server"
+    h = os.environ.get("AI_EDITOR_HOST", "127.0.0.1")
+    disp_host = "127.0.0.1" if h in ("127.0.0.1", "0.0.0.0") else h
     if last.is_file() and (os.name == "nt" or last.stat().st_mode & 0o077 == 0):   # only our own private file
-        m = re.match(r"http://127\.0\.0\.1:(\d+)/\?t=([\w-]+)$", last.read_text(encoding="utf-8").strip())
+        m = re.match(r"http://[\w.-]+:(\d+)/\?t=([\w-]+)$", last.read_text(encoding="utf-8").strip())
         if m:   # the same address as last time, so an open tab or a saved link keeps working
             token, want = m.group(2), port or int(m.group(1))
     # exclusive bind on Windows, where SO_REUSEADDR (HTTPServer's default) lets two servers share a port
     cls = type("Server", (ThreadingHTTPServer,), {"allow_reuse_address": os.name != "nt"})
     try:
-        srv = cls(("127.0.0.1", want), make_handler(folder, token))
+        srv = cls((h, want), make_handler(folder, token))
     except OSError:   # the old port is taken now: a new one, same token
-        srv = cls(("127.0.0.1", port), make_handler(folder, token))
-    url = f"http://127.0.0.1:{srv.server_address[1]}/?t={token}"
+        srv = cls((h, port), make_handler(folder, token))
+    url = f"http://{disp_host}:{srv.server_address[1]}/?t={token}"
     last.parent.mkdir(parents=True, exist_ok=True)   # a video made elsewhere has no review/ folder yet
     with os.fdopen(os.open(last, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
         f.write(url)   # private: the token in it lets a page in
