@@ -1951,7 +1951,7 @@ def make_handler(token):
             extra = os.environ.get("AI_EDITOR_ALLOWED_HOSTS")
             if extra:
                 allowed.update(h.strip() for h in extra.split(",") if h.strip())
-            if host not in allowed:   # DNS rebinding: another name pointing here
+            if not ("*" in allowed or host in allowed or any(h.startswith(".") and (host.endswith(h) or host == h.lstrip(".")) for h in allowed)):
                 return False
             q = parse_qs(urlsplit(self.path).query).get("t", [""])[0]
             c = SimpleCookie()

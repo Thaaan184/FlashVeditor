@@ -27,7 +27,7 @@ services:
       # FlashVeditor Server Settings
       - AI_EDITOR_HOST=${AI_EDITOR_HOST:-0.0.0.0}
       - AI_EDITOR_LIBRARY=${AI_EDITOR_LIBRARY:-/library}
-      - AI_EDITOR_ALLOWED_HOSTS=${AI_EDITOR_ALLOWED_HOSTS:-localhost,127.0.0.1,host.docker.internal}
+      - AI_EDITOR_ALLOWED_HOSTS=${AI_EDITOR_ALLOWED_HOSTS:-localhost,127.0.0.1,host.docker.internal,.trycloudflare.com}
     volumes:
       - ./library:/library
       - ./edits:/edits

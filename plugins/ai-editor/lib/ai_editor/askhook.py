@@ -150,7 +150,11 @@ def register(srv, url, kind=None, owner=None, where=None, folder=None):
 def same_origin(h):
     """A POST from the page itself: no Origin header (curl, the hook) or this server's own address."""
     o = h.headers.get("Origin")
-    return not o or o == "http://" + (h.headers.get("Host") or "")
+    if not o:
+        return True
+    host = h.headers.get("Host") or ""
+    proto = h.headers.get("X-Forwarded-Proto") or "http"
+    return o in (f"{proto}://{host}", f"http://{host}", f"https://{host}")
 
 
 def _seen(srv):
