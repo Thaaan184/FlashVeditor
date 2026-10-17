@@ -1,0 +1,11 @@
+task: T-08
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - transcription: PASS (words.raw.json terbentuk 58 kata)
+  - timeline_compilation: PASS (decisions.json, words.json, cut-check.html terbentuk)
+  - cut_render: PASS (cut.mp4 ter-render 11.633s dari 12.000s)
+  - words_retimed: PASS (words.json sinkron 53 kept words)
+  - zero_secrets: PASS (0 key/token di log)

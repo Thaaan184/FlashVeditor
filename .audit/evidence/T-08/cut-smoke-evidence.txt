@@ -1,0 +1,11 @@
+=== T-08 CUT SMOKE TEST PASS ===
+Raw source: /home/ids/projects/FlashVeditor/plugins/ai-editor/presets/styles/sample-card-edit/example.mp4
+Original duration: 12.000 s
+Cut duration: 11.633 s
+Transcribed words: 58
+Kept words: 53
+Cut spans applied: 1
+cut.mp4 verified: True (4255805 bytes)
+words.json verified: True
+decisions.json verified: True
+cut-check.html verified: True
