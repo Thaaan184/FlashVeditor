@@ -9,4 +9,5 @@
 | T-05-r1 | 2026-10-17 | konfigurasi | Template .claude/settings.local.json.example | 7d4bfda | docs/changes/T-05-r1-claude-settings.md | active |
 | T-06-r1 | 2026-10-17 | verifikasi | Verifikasi model mapping Haiku, Sonnet, Opus di 9Router | 5a833fb | docs/changes/T-06-r1-model-mapping.md | active |
 | T-07-r1 | 2026-10-17 | fitur | Sanitasi env var gateway pada launcher open_claude | 8c568b0 | docs/changes/T-07-r1-launcher-sanitation.md | active |
-| T-08-r1 | 2026-10-17 | verifikasi | Smoke test engine cut (cut.mp4 & words.json) | 6176b3d | docs/changes/T-08-r1-smoke-cut.md | active |
+| T-08-r1 | 2026-10-17 | verifikasi | Smoke test engine cut (cut.mp4 & words.json) | 5f6af95 | docs/changes/T-08-r1-smoke-cut.md | active |
+| T-09-r1 | 2026-10-17 | verifikasi | Smoke test style-edit (plan.json) & render Remotion (render.mp4) | 3561267 | docs/changes/T-09-r1-smoke-style-render.md | active |

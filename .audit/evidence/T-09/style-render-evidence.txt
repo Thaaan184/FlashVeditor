@@ -1,0 +1,7 @@
+=== T-09 STYLE-EDIT & REMOTION RENDER PASS ===
+plan.json generated: True
+Plan keys: ['video', 'width', 'height', 'fps', 'durationInFrames', 'look', 'motion', 'captions', 'zooms', 'card_gap_s', 'cards', 'sfx']
+Plan duration in frames: 349 (30 fps)
+render.mp4 generated: True (9656250 bytes)
+render.mp4 duration: 11.633 s
+render.mp4 stream: h264 1080x1920
