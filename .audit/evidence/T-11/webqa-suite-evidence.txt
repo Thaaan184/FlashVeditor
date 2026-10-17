@@ -1,0 +1,42 @@
+=== T-11 WEB-QA SUITE (W-01 s/d W-13) 3X CONSECUTIVE RUNS ===
+[Round 1] W-01: Unauthorized access blocked (HTTP 401/403)
+[Round 1] W-02: Authorized root access HTTP 200
+[Round 1] W-03: Security cookie/token validated (cookie_set=True)
+[Round 1] W-04: Review server initialized on port 36329
+[Round 1] W-05: /state endpoint returned active stage and valid state
+[Round 1] W-06: /cut-check.html returned HTTP 200 with content
+[Round 1] W-07: cut.mp4 streaming Range request (HTTP 206, 1024 bytes)
+[Round 1] W-08: /video streaming Range request (HTTP 206, 501 bytes)
+[Round 1] W-09: /download endpoint returned video/mp4 stream
+[Round 1] W-10: Valid POST /theme accepted (HTTP 200, theme=dark)
+[Round 1] W-11: CSRF protection blocked untrusted Origin (HTTP 403)
+[Round 1] W-12: Non-existent path handled gracefully with HTTP 404
+[Round 1] W-13: Server clean shutdown completed
+[Round 2] W-01: Unauthorized access blocked (HTTP 401/403)
+[Round 2] W-02: Authorized root access HTTP 200
+[Round 2] W-03: Security cookie/token validated (cookie_set=True)
+[Round 2] W-04: Review server initialized on port 41247
+[Round 2] W-05: /state endpoint returned active stage and valid state
+[Round 2] W-06: /cut-check.html returned HTTP 200 with content
+[Round 2] W-07: cut.mp4 streaming Range request (HTTP 206, 1024 bytes)
+[Round 2] W-08: /video streaming Range request (HTTP 206, 501 bytes)
+[Round 2] W-09: /download endpoint returned video/mp4 stream
+[Round 2] W-10: Valid POST /theme accepted (HTTP 200, theme=dark)
+[Round 2] W-11: CSRF protection blocked untrusted Origin (HTTP 403)
+[Round 2] W-12: Non-existent path handled gracefully with HTTP 404
+[Round 2] W-13: Server clean shutdown completed
+[Round 3] W-01: Unauthorized access blocked (HTTP 401/403)
+[Round 3] W-02: Authorized root access HTTP 200
+[Round 3] W-03: Security cookie/token validated (cookie_set=True)
+[Round 3] W-04: Review server initialized on port 34255
+[Round 3] W-05: /state endpoint returned active stage and valid state
+[Round 3] W-06: /cut-check.html returned HTTP 200 with content
+[Round 3] W-07: cut.mp4 streaming Range request (HTTP 206, 1024 bytes)
+[Round 3] W-08: /video streaming Range request (HTTP 206, 501 bytes)
+[Round 3] W-09: /download endpoint returned video/mp4 stream
+[Round 3] W-10: Valid POST /theme accepted (HTTP 200, theme=dark)
+[Round 3] W-11: CSRF protection blocked untrusted Origin (HTTP 403)
+[Round 3] W-12: Non-existent path handled gracefully with HTTP 404
+[Round 3] W-13: Server clean shutdown completed
+
+All 3 rounds PASSED consistently (39/39 checks green).

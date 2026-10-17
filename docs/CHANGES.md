@@ -12,3 +12,4 @@
 | T-08-r1 | 2026-10-17 | verifikasi | Smoke test engine cut (cut.mp4 & words.json) | 5f6af95 | docs/changes/T-08-r1-smoke-cut.md | active |
 | T-09-r1 | 2026-10-17 | verifikasi | Smoke test style-edit (plan.json) & render Remotion (render.mp4) | 592d63e | docs/changes/T-09-r1-smoke-style-render.md | active |
 | T-10-r1 | 2026-10-17 | verifikasi | Visual creator-teardown via 9Router (ag/gemini-3.8-flash-high) | 1af921a | docs/changes/T-10-r1-teardown-gemini.md | active |
+| T-11-r1 | 2026-10-17 | verifikasi | Suite uji Web-QA (W-01 s/d W-13) konsisten 3x | f65ddf9 | docs/changes/T-11-r1-webqa-suite.md | active |

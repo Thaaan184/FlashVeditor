@@ -1,0 +1,12 @@
+task: T-11
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - webqa_rounds: "PASS (3 putaran berurutan, 39/39 checks sukses)"
+  - range_streaming: "PASS (cut.mp4 dan render.mp4 respons HTTP 206 Partial Content)"
+  - auth_guard: "PASS (unauthorized request ditolak HTTP 401/403)"
+  - csrf_guard: "PASS (POST dari origin luar ditolak HTTP 403)"
+  - clean_shutdown: "PASS (server shutdown dan release socket bersih)"
+  - zero_secrets: "PASS (0 key/token di log bukti)"
