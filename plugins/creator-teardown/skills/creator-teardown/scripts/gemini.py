@@ -36,6 +36,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -51,12 +52,30 @@ import _progress  # noqa: E402
 from fetch import OUT_ROOT, slug  # noqa: E402
 from transcribe import find_key  # noqa: E402
 
-# Cheapest first. A 404 (retired, or closed to new keys) moves on to the next.
-# gemini-2.5-flash-lite ($0.10) is closed to keys made after mid-2026.
+# Base configuration from environment with defaults
+BASE = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+VER = os.environ.get("GEMINI_API_VERSION", "v1beta").strip("/")
 MODELS = [os.environ["GEMINI_MODEL"]] if os.environ.get("GEMINI_MODEL") else \
     ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
 MODEL = MODELS[0]
-API = "https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
+API = f"{BASE}/{VER}/models/{{m}}:generateContent"
+
+
+def api_url(p):
+    return f"{BASE}/{VER}/{p.lstrip('/')}"
+
+
+def upload_url():
+    return f"{BASE}/upload/{VER}/files"
+
+
+def headers(key):
+    h = {"Content-Type": "application/json"}
+    if os.environ.get("GEMINI_AUTH_MODE", "").lower() == "bearer":
+        h["Authorization"] = f"Bearer {key}"
+    else:
+        h["x-goog-api-key"] = key
+    return h
 FONTS = ["Montserrat", "Poppins", "Inter", "Roboto", "TikTok Sans", "Archivo Black", "Anton",
          "Bebas Neue", "Oswald", "Nunito", "Playfair Display", "DM Serif Display", "Caveat",
          "Permanent Marker", "JetBrains Mono"]
@@ -107,6 +126,12 @@ Judge only what is on screen. Captions are the words burned in that follow the s
 
 def video_bytes(path):
     """The video, silent, 480 px tall, 2 fps: a few hundred KB, sent inline."""
+    if os.environ.get("GEMINI_FRAME_SAMPLING", "0").lower() in ("1", "true", "yes"):
+        with tempfile.TemporaryDirectory() as d:
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-vf",
+                            "fps=1,scale=-2:480", "-q:v", "5", f"{d}/f%03d.jpg"], check=True)
+            files = sorted(Path(d).glob("f*.jpg"))[:4]
+            return [f.read_bytes() for f in files]
     with tempfile.TemporaryDirectory() as d:
         out = Path(d) / "small.mp4"
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-an", "-vf",
@@ -116,6 +141,13 @@ def video_bytes(path):
 
 
 def body(data, fps=1.0):
+    if isinstance(data, list):
+        parts: list = [{"inlineData": {"mimeType": "image/jpeg", "data": base64.b64encode(f).decode()}}
+                       for f in data]
+        prompt_text = PROMPT + "\nIMPORTANT: Return ONLY a valid JSON object matching the required keys. Do not include markdown codeblocks or preamble."
+        parts.append({"text": prompt_text})
+        return {"contents": [{"parts": parts}],
+                "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}}
     return {"contents": [{"parts": [
         {"inlineData": {"mimeType": "video/mp4", "data": base64.b64encode(data).decode()},
          "videoMetadata": {"fps": fps}},
@@ -124,10 +156,43 @@ def body(data, fps=1.0):
                              "responseSchema": SCHEMA, "mediaResolution": "MEDIA_RESOLUTION_LOW"}}
 
 
+def tolerant_json_parse(text):
+    text = text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1:
+            try:
+                return json.loads(text[start:end+1])
+            except Exception:
+                pass
+        res = {}
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or ":" not in line:
+                continue
+            k, v = line.split(":", 1)
+            k = k.strip().strip("-* ")
+            v = v.strip().strip("\"'")
+            if k in SCHEMA["properties"]:
+                if SCHEMA["properties"][k].get("type") == "ARRAY":
+                    res[k] = [x.strip() for x in v.split(",") if x.strip()]
+                else:
+                    res[k] = v
+        if res:
+            return res
+        raise
+
+
 def parse(resp):
     """(look dict, input tokens) from a generateContent response."""
     text = resp["candidates"][0]["content"]["parts"][0]["text"]
-    return json.loads(text), (resp.get("usageMetadata") or {}).get("promptTokenCount", 0)
+    return tolerant_json_parse(text), (resp.get("usageMetadata") or {}).get("promptTokenCount", 0)
 
 
 def call(key, payload):
@@ -141,8 +206,8 @@ def call(key, payload):
 
 def post(key, payload, model=None):
     model = model or MODEL
-    req = urllib.request.Request(API.format(m=model), json.dumps(payload).encode(),
-                                 {"Content-Type": "application/json", "x-goog-api-key": key})
+    url = API.format(m=model)
+    req = urllib.request.Request(url, json.dumps(payload).encode(), headers(key))
     for wait in (10, 30, 60, None):
         try:
             with _net.urlopen(req, 180) as r:
@@ -401,6 +466,18 @@ def demo():
             "usageMetadata": {"promptTokenCount": 4100}}
     got, tok = parse(resp)
     assert got == r1 and tok == 4100
+    # tolerant json parse: handles markdown code fence
+    fence_resp = {"candidates": [{"content": {"parts": [{"text": f"```json\n{json.dumps(r1)}\n```"}]}}],
+                  "usageMetadata": {"promptTokenCount": 4100}}
+    got_fence, _ = parse(fence_resp)
+    assert got_fence == r1
+    # gateway helpers check
+    assert api_url("models/test").endswith("/models/test")
+    assert upload_url().endswith("/upload/v1beta/files")
+    assert "x-goog-api-key" in headers("mykey")
+    os.environ["GEMINI_AUTH_MODE"] = "bearer"
+    assert headers("mytoken") == {"Content-Type": "application/json", "Authorization": "Bearer mytoken"}
+    os.environ.pop("GEMINI_AUTH_MODE", None)
     r2 = dict(r1, closest_google_font="Inter", graphics_style=["real screenshots"],
               not_generic=["White one-word captions low on the chest", "screenshots slide up"])
     r3 = dict(r1, graphics_style=["memes"])

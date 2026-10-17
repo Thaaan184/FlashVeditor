@@ -1,0 +1,7 @@
+=== TEST 1: MOCK SERVER GATEWAY ROUTING ===
+[OK] Base URL normalized: http://127.0.0.1:36345
+[OK] Upload URL: http://127.0.0.1:36345/upload/v1beta/files
+[OK] Mock received path: /v1beta/models/test-model-audit:generateContent
+[OK] Mock received Auth header: Bearer test_bearer_token_xyz999
+[OK] Mock parsed look output: Inter, font_confidence=high
+MOCK TEST: PASSED

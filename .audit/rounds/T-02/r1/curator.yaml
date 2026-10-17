@@ -1,0 +1,12 @@
+task: T-02
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - mock_test: PASS (.audit/evidence/T-02/mock-test.txt)
+  - real_9router_call: PASS (.audit/evidence/T-02/real-call.txt, model ag/gemini-3.8-flash-high, 7518 tokens)
+  - gemini_demo: PASS (gemini.py demo returned ok)
+  - protected_paths: PASS (guard.py verified no protected files touched)
+  - zero_secrets: PASS (no API keys in diff or repo)
+  - documentation: PASS (docs/functions/gemini-gateway.md created)

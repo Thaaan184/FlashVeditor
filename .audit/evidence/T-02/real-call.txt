@@ -1,0 +1,7 @@
+=== TEST 2: REAL 9ROUTER GATEWAY CALL ===
+[INFO] Generated test video frames: 2 frames
+[INFO] Calling 9Router model ag/gemini-3.8-flash-high at http://localhost:20128/v1beta/models/ag/gemini-3.8-flash-high:generateContent...
+[OK] 9Router responded with model: ag/gemini-3.8-flash-high
+[OK] Parsed look dict from 9Router: font=unknown, style=unknown, tokens=7518
+[OK] Full parsed response keys: ['font_class', 'closest_google_font', 'font_confidence', 'weight_class', 'caption_case', 'caption_animation', 'graphics_style', 'motion_personality', 'not_generic']
+REAL 9ROUTER TEST: PASSED
