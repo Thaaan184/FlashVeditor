@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://127.0.0.1:20128",
+    "ANTHROPIC_API_KEY": "your-9router-api-key-here",
+    "ANTHROPIC_MODEL": "ag/claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "ag/gemini-3.8-flash-high",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "ag/claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "ag/claude-opus-4-6-thinking"
+  }
+}
