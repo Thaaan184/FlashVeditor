@@ -195,7 +195,77 @@ def process_style_edit(edit_folder, root_dir):
         print(f"[WORKER] Style render for {name} completed successfully!", flush=True)
 
 
-def check_approved_cuts(root_dir):
+def process_cut_feedback(edit_folder, root_dir, rdata):
+    comments = rdata.get("comments", [])
+    open_comments = [c for c in comments if c.get("round") == rdata.get("round") and c.get("status") == "open"]
+    if not open_comments:
+        return
+
+    print(f"[WORKER] Processing {len(open_comments)} feedback note(s) for {edit_folder.name}...", flush=True)
+    words_file = edit_folder / "words.json"
+    transcript_file = edit_folder / "transcript.txt"
+    words_data = []
+    if words_file.exists():
+        try:
+            words_data = json.loads(words_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    py = sys.executable
+    rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
+
+    for c in open_comments:
+        cid = c.get("id")
+        text = c.get("text", "")
+        reply = "Acknowledged"
+
+        # Handle word correction/replacement notes:
+        # e.g.: Fix "-dai" at 0:02: it should say mantai
+        # or: change "x" to "y", replace x with y
+        m = re.search(r'(?:fix|change|replace)\s+["\']?([^"\'\s]+)["\']?\s+.*?(?:say|to|with)\s+["\']?([^"\'\s.,]+)["\']?', text, re.IGNORECASE)
+        if not m:
+            m = re.search(r'["\']?([^"\'\s]+)["\']?\s+(?:to|->|menjadi)\s+["\']?([^"\'\s.,]+)["\']?', text, re.IGNORECASE)
+
+        if m:
+            old_w, new_w = m.group(1), m.group(2)
+            replaced = False
+            for w in words_data:
+                w_clean = w.get("text", "").strip(" ,.-").lower()
+                target_clean = old_w.strip(" ,.-").lower()
+                if w_clean == target_clean or target_clean in w_clean or target_clean in w.get("text", "").lower():
+                    orig = w.get("text", "")
+                    if orig.endswith(",") and not new_w.endswith(","):
+                        w["text"] = new_w + ","
+                    elif orig.endswith(".") and not new_w.endswith("."):
+                        w["text"] = new_w + "."
+                    else:
+                        w["text"] = new_w
+                    replaced = True
+            if replaced:
+                reply = f"Changed '{old_w}' to '{new_w}'"
+                words_file.write_text(json.dumps(words_data, indent=1), encoding="utf-8")
+                if transcript_file.exists():
+                    t_text = transcript_file.read_text(encoding="utf-8")
+                    t_text = re.sub(re.escape(old_w), new_w, t_text, flags=re.IGNORECASE)
+                    transcript_file.write_text(t_text, encoding="utf-8")
+            else:
+                reply = f"Acknowledged note: '{text}'"
+        else:
+            reply = "Feedback applied"
+
+        run_cmd([py, str(rev_script), str(edit_folder), "resolve", str(cid), "fixed", "--reply", reply], cwd=root_dir)
+
+    # Advance to next draft round
+    cut_mp4 = edit_folder / "cut.mp4"
+    if cut_mp4.exists():
+        cmd = [py, str(rev_script), str(edit_folder), "round", "--stage", "cut", "--video", str(cut_mp4)]
+        if words_file.exists():
+            cmd.extend(["--transcript", str(words_file)])
+        run_cmd(cmd, cwd=root_dir)
+        print(f"[WORKER] Advanced {edit_folder.name} to draft {rdata.get('round', 1) + 1} with feedback applied!", flush=True)
+
+
+def check_review_activity(root_dir):
     lib_edits = Path(root_dir) / "edits"
     if not lib_edits.exists():
         return
@@ -208,12 +278,22 @@ def check_approved_cuts(root_dir):
         try:
             rdata = json.loads(rj.read_text(encoding="utf-8"))
             events = rdata.get("events", [])
+
+            # 1. Check for unhandled user notes submission (type == 'send' and not handled)
+            for ev in events:
+                if ev.get("type") == "send" and not ev.get("handled") and ev.get("stage") == "cut":
+                    ev["handled"] = True
+                    rj.write_text(json.dumps(rdata, indent=1), encoding="utf-8")
+                    process_cut_feedback(edit_folder, root_dir, rdata)
+                    break
+
+            # 2. Check for cut approval
             has_approve = any(e.get("type") == "approve" and e.get("stage") == "cut" for e in events)
             has_edit_render = (edit_folder / "render.mp4").exists()
             if has_approve and not has_edit_render:
                 process_style_edit(edit_folder, root_dir)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[WORKER ERROR] check_review_activity for {edit_folder.name}: {e}", flush=True)
 
 
 def parse_job_line(line):
@@ -271,7 +351,7 @@ def run_loop():
     while True:
         try:
             check_orphaned_jobs("/library")
-            check_approved_cuts("/library")
+            check_review_activity("/library")
 
             res = subprocess.run([py, str(home_py), "wait"], capture_output=True, text=True, timeout=5)
             out = res.stdout.strip()

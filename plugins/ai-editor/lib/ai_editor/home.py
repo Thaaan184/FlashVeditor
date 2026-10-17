@@ -1953,6 +1953,12 @@ def make_handler(token):
             cookie_str = self.headers.get("Cookie", "")
             port = None
             tok = None
+            ref = self.headers.get("Referer", "")
+            m = re.search(r"dir=([^&]+)", self.path + " " + ref)
+            if m:
+                dname = Path(unquote(m.group(1))).name
+                if dname in _REVIEW_SERVERS:
+                    return _REVIEW_SERVERS[dname]
             if "ave_review_port=" in cookie_str:
                 for c in cookie_str.split(";"):
                     c = c.strip()
@@ -1963,10 +1969,11 @@ def make_handler(token):
                             pass
                     elif c.startswith("ave_review_token="):
                         tok = c.split("=", 1)[1]
-            if not port and _LATEST_REVIEW.get("port"):
-                port = _LATEST_REVIEW.get("port")
-                tok = _LATEST_REVIEW.get("token")
-            return port, tok
+            if port and tok:
+                return port, tok
+            if _LATEST_REVIEW.get("port"):
+                return _LATEST_REVIEW.get("port"), _LATEST_REVIEW.get("token")
+            return None, None
 
         def forward_to_review(self, port, token, path_and_query, body=None, is_page=False):
             import http.client
@@ -1984,10 +1991,11 @@ def make_handler(token):
             if token_cookie not in cookies:
                 hdrs["Cookie"] = (cookies + "; " if cookies else "") + token_cookie
 
-            if "?" in path_and_query:
-                target_path = path_and_query + f"&t={token}"
+            if f"t={token}" not in path_and_query:
+                sep = "&" if "?" in path_and_query else "?"
+                target_path = f"{path_and_query}{sep}t={token}"
             else:
-                target_path = path_and_query + f"?t={token}"
+                target_path = path_and_query
 
             try:
                 conn.request(self.command, target_path, body=body, headers=hdrs)
@@ -2262,7 +2270,12 @@ def make_handler(token):
             if not askhook.same_origin(self):   # a POST from another site's page, even with the cookie
                 return self.send(403, {"error": "not from this page"})
             path = urlsplit(self.path).path
-            if path in ("/comment", "/approve", "/edits", "/send", "/back", "/learn", "/undo", "/keep", "/edit", "/trials", "/shutdown"):
+            REVIEW_POST_PATHS = {
+                "/event", "/comment", "/approve", "/edits", "/send", "/back", "/learn",
+                "/undo", "/keep", "/edit", "/trials", "/shutdown", "/assets", "/delete",
+                "/check", "/intro", "/scope", "/update", "/resolve", "/round", "/status"
+            }
+            if path in REVIEW_POST_PATHS or ("/review" in self.headers.get("Referer", "") and path not in ("/script", "/upload", "/style/cover", "/job", "/gateway", "/theme")):
                 r_port, r_tok = self.get_review_target()
                 if r_port and r_tok:
                     clen = int(self.headers.get("Content-Length") or 0)
