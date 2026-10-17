@@ -12,21 +12,21 @@ services:
       - "47822-47835:47822-47835"
     environment:
       # 9Router local gateway endpoints
-      - GEMINI_BASE_URL=http://host.docker.internal:20128
-      - GEMINI_API_VERSION=v1beta
-      - GEMINI_AUTH_MODE=bearer
-      - GEMINI_MODEL=ag/gemini-3.8-flash-high
-      - GEMINI_API_KEY=FlashVeditor
+      - GEMINI_BASE_URL=${GEMINI_BASE_URL:-http://host.docker.internal:20128}
+      - GEMINI_API_VERSION=${GEMINI_API_VERSION:-v1beta}
+      - GEMINI_AUTH_MODE=${GEMINI_AUTH_MODE:-bearer}
+      - GEMINI_MODEL=${GEMINI_MODEL:-ag/gemini-3.8-flash-high}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-FlashVeditor}
       # Claude Code / Anthropic settings (jika menggunakan agen)
-      - ANTHROPIC_BASE_URL=http://host.docker.internal:20128
-      - ANTHROPIC_AUTH_TOKEN=FlashVeditor
-      - ANTHROPIC_DEFAULT_HAIKU_MODEL=ag/gemini-3.8-flash-high
-      - ANTHROPIC_DEFAULT_SONNET_MODEL=ag/claude-sonnet-4-6
-      - ANTHROPIC_DEFAULT_OPUS_MODEL=ag/claude-opus-4-6-thinking
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-http://host.docker.internal:20128}
+      - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-FlashVeditor}
+      - ANTHROPIC_DEFAULT_HAIKU_MODEL=${ANTHROPIC_DEFAULT_HAIKU_MODEL:-ag/gemini-3.8-flash-high}
+      - ANTHROPIC_DEFAULT_SONNET_MODEL=${ANTHROPIC_DEFAULT_SONNET_MODEL:-ag/claude-sonnet-4-6}
+      - ANTHROPIC_DEFAULT_OPUS_MODEL=${ANTHROPIC_DEFAULT_OPUS_MODEL:-ag/claude-opus-4-6-thinking}
       # FlashVeditor Server Settings
-      - AI_EDITOR_HOST=0.0.0.0
-      - AI_EDITOR_LIBRARY=/library
-      - AI_EDITOR_ALLOWED_HOSTS=localhost,127.0.0.1,host.docker.internal
+      - AI_EDITOR_HOST=${AI_EDITOR_HOST:-0.0.0.0}
+      - AI_EDITOR_LIBRARY=${AI_EDITOR_LIBRARY:-/library}
+      - AI_EDITOR_ALLOWED_HOSTS=${AI_EDITOR_ALLOWED_HOSTS:-localhost,127.0.0.1,host.docker.internal}
     volumes:
       - ./library:/library
       - ./edits:/edits
