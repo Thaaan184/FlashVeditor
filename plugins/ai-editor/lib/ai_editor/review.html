@@ -549,7 +549,7 @@ body.making #making{display:flex}
 </header>
 <section id="how" aria-label="how this works"><ol>
  <li><b>1. Watch and note</b>Pause where something is off and leave a note. It is pinned to that moment, with the frame. On the edit, click a card, caption or zoom on the video, or select words in the transcript, and the note starts with what it is. Paste or drop an image to show what you mean.</li>
- <li><b>2. Submit feedback to Claude</b>Notes stay here until you press it. Then Claude reads every note and fixes the video. You see each step here while it works. The new draft opens by itself.</li>
+ <li><b>2. Submit feedback to AI Editor</b>Notes stay here until you press it. The AI reads every note and updates the video. You see each step here while it works. The new draft opens by itself.</li>
  <li><b>3. Approve</b>When it is right, approve it. An approved cut gets captions, zooms and sound next. An approved edit is finished, and your notes can teach your style.</li>
 </ol><div id="keys"></div></section>
 
@@ -787,13 +787,13 @@ function steps(){
 }
 function listenText(S){
   const e=S.events[S.events.length-1],picked=!!(S.sent&&e&&e.handled);
-  if(picked&&e.type==='approve')return e.stills?'Claude is making the video':e.stage==='cut'?(S.stage==='cut'&&!S.final?'Claude is making the edit':'The cut is approved'):'Approved';
-  if(picked)return S.raw?(S.cut_steps&&S.cut_steps.state==='queued'?((S.cut_steps.claude||{}).opened?'Claude is working in its own Terminal window':'Waiting for Claude'):'Claude is making the cut'):e.type==='edits'?'Claude is applying your changes':'Claude is working on the next draft';
+  if(picked&&e.type==='approve')return e.stills?'AI Editor is making the video':e.stage==='cut'?(S.stage==='cut'&&!S.final?'AI Editor is making the edit':'The cut is approved'):'Approved';
+  if(picked)return S.raw?(S.cut_steps&&S.cut_steps.state==='queued'?'Waiting for AI Worker':'AI Editor is making the cut'):e.type==='edits'?'AI Editor is applying your changes':'AI Editor is working on the next draft';
   if(S.sent)return e&&e.type==='edits'?'Changes sent':e&&e.type==='approve'?(e.stills?'Preview approved':e.stage==='cut'?'Cut approved':'Approved'):'Notes sent';
   const first=!(S.rounds||[]).some(r=>r.stage===S.stage&&r.round>=1&&r.round<S.round&&!r.stills);   // the first video of the cut or the edit (the stills before it are not one)
-  if(S.listening)return S.round>1&&!S.comments.some(c=>c.stage===S.stage&&c.round===S.round)?(first?(S.stage==='edit'?(S.stills?'The preview is ready':'The edit is ready'):'The cut is ready'):cap(dn(S))+' is ready'):'Claude is listening';
-  if(S.busy)return 'Claude is working. Notes you send now are next.';
-  return 'Claude is not listening. Notes still save.';
+  if(S.listening)return S.round>1&&!S.comments.some(c=>c.stage===S.stage&&c.round===S.round)?(first?(S.stage==='edit'?(S.stills?'The preview is ready':'The edit is ready'):'The cut is ready'):cap(dn(S))+' is ready'):'AI Worker is listening';
+  if(S.busy)return 'AI Worker is processing. Notes you send now are next.';
+  return 'AI Worker is idle. Notes still save.';
 }
 function render(){
   if(!S)return;
@@ -939,26 +939,26 @@ function workHtml(){
       :`<li class="todo"><span class="ic"><i></i></span>${esc(m.steps[k])}</li>`).join('')
       +(m.extra?`<li class="now"><span class="ic">${SPIN}</span>${esc(m.extra)}</li>`:'');
     const ok=S.stills?'The preview is approved. ':'The cut is approved. ';
-    return `<div class="claude"><div><b>Claude</b><p>${esc(m.idle?ok+m.idle:ok+(S.stills?'Claude is making the video':'Claude is making the edit')+(m.style?' in '+m.style:'')+'.')}</p></div><ol class="steps">${li}</ol>${m.at&&!m.idle?`<span class="since" data-since="${esc(m.at)}">Working for ${dur((Date.now()-new Date(m.at))/1000)}</span>`:''}</div>`}
-  if(p==='approve')return `<div class="claude"><div><b>Claude</b><p>${S.stage==='cut'?'The cut is approved. It is the finished video.':'Approved. The edit is finished.'}</p></div></div>`+learnHtml();
+    return `<div class="claude"><div><b>AI Editor</b><p>${esc(m.idle?ok+m.idle:ok+(S.stills?'AI Editor is making the video':'AI Editor is making the edit')+(m.style?' in '+m.style:'')+'.')}</p></div><ol class="steps">${li}</ol>${m.at&&!m.idle?`<span class="since" data-since="${esc(m.at)}">Working for ${dur((Date.now()-new Date(m.at))/1000)}</span>`:''}</div>`}
+  if(p==='approve')return `<div class="claude"><div><b>AI Editor</b><p>${S.stage==='cut'?'The cut is approved. It is the finished video.':'Approved. The edit is finished.'}</p></div></div>`+learnHtml();
   if(S.raw&&S.cut_steps)return cutHtml(S.cut_steps);
   if(p!=='send'&&(!live||S.stage==='cut'))return '';   // the cut is ready: what Claude does next is the edit's prep, not this round
   const ed=editsSent()?S.events[S.events.length-1]:null,nch=ed?plural(ed.n,'transcript change'):'';
-  const head=S.raw?'Making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.':ed?(act.length?`Claude is applying your changes (${nch}). The next draft opens here.`:picked?`Claude has your ${nch} and is starting ${nextDn()}.`:S.listening||S.busy?`${nch} saved. Waiting for Claude to pick them up.`:`${nch} saved, but Claude is not listening. Ask Claude in the terminal to apply them.`):p==='send'?(act.length?`Making ${nextDn()}.`:picked?`Claude has your notes and is starting ${nextDn()}.`:'Notes sent. Waiting for Claude to pick them up.'+(S.listening||!S.busy?'':' Claude is finishing something and takes them next.')):'Still coming in this draft:';
+  const head=S.raw?'Making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.':ed?(act.length?`AI Editor is applying your changes (${nch}). The next draft opens here.`:picked?`AI Editor has your ${nch} and is starting ${nextDn()}.`:S.listening||S.busy?`${nch} saved. Waiting for AI Worker to pick them up.`:`${nch} saved. Notes ready for processing.`):p==='send'?(act.length?`Making ${nextDn()}.`:picked?`AI Editor has your notes and is starting ${nextDn()}.`:'Notes sent. Waiting for AI Worker.'+(S.listening||!S.busy?'':' AI Worker is finishing something and takes them next.')):'Still coming in this draft:';
   if(p!=='send'&&!ed&&!S.raw&&!act.some(x=>x.step||x.pct!=null))   // the draft is out: a plain line from Claude is a remark, not work still coming
-    return `<div class="claude"><div><b>Claude</b>${act.map(x=>`<p>${esc(x.text)}</p>`).join('')}</div></div>`;
+    return `<div class="claude"><div><b>AI Editor</b>${act.map(x=>`<p>${esc(x.text)}</p>`).join('')}</div></div>`;
   const li=act.map(x=>x.done?`<li><span class="ic">${TICK}</span>${esc(x.text)}</li>`
     :`<li class="now"><span class="ic">${SPIN}</span>${esc(x.text)}</li>`+(x.pct!=null?`<li class="pb"><em><i style="width:${x.pct}%"></i></em>${x.pct}%</li>`:'')).join('');
   const sent=e&&e.type==='send'?e.at:null;
-  return `<div class="claude"><div><b>Claude</b><p>${esc(head)}</p></div>${li?`<ol class="steps">${li}</ol>`:''}${sent&&p==='send'?`<span class="since" data-since="${esc(sent)}">Working for ${dur((Date.now()-new Date(sent))/1000)}</span>`:''}</div>`;
+  return `<div class="claude"><div><b>AI Editor</b><p>${esc(head)}</p></div>${li?`<ol class="steps">${li}</ol>`:''}${sent&&p==='send'?`<span class="since" data-since="${esc(sent)}">Working for ${dur((Date.now()-new Date(sent))/1000)}</span>`:''}</div>`;
 }
 // round 0: every step the cut takes (review.py cut_steps, from the scripts' own reports), ticked as they finish
 function cutHtml(c){
   const cl=c.claude||{},head=c.state==='failed'?'The cut stopped. '+(c.error||'')
-    :c.state==='queued'?(cl.opened?'Claude is working on this video in its own Terminal window.':cl.command?'To make this video, run this in a new Terminal window:':'Waiting for Claude to pick this up.')
-    :(cl.opened?'Claude is working on this video in its own Terminal window. ':'Claude is making the cut. ')+'Your clip plays meanwhile. Notes you leave now go on the cut.';
+    :c.state==='queued'?'Waiting for AI Worker to pick this up.'
+    :'AI Editor is making the cut. Your clip plays meanwhile. Notes you leave now go on the cut.';
   const li=c.steps.map(x=>`<li class="${x.state==='done'?'ok':x.state}"><span class="ic">${x.state==='done'?TICK:x.state==='now'&&c.state==='taken'?SPIN:'<i></i>'}</span>${esc(x.text)}</li>`).join('');
-  return `<div class="claude"><div><b>Claude</b><p>${esc(head)}</p>${c.state==='queued'&&!cl.opened&&cl.command?`<code class="cmd">${esc(cl.command)}</code>`:''}</div><ol class="steps">${li}</ol></div>`;
+  return `<div class="claude"><div><b>AI Editor</b><p>${esc(head)}</p></div><ol class="steps">${li}</ol></div>`;
 }
 // a rule Claude saved from a note or the Teach panel: "Saved to <style>: <rule>. Undo" (Undo only for a rule this save added)
 function rcptHtml(id){

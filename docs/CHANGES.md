@@ -16,3 +16,4 @@
 | T-12-r1 | 2026-10-17 | verifikasi | Audit Red-Team mandiri fault injection (F-01 s/d F-13) | 76da572 | docs/changes/T-12-r1-redteam-audit.md | active |
 | T-13-r1 | 2026-10-17 | verifikasi | Regresi plugin, integritas docs, dan latihan rollback | 48fed08 | docs/changes/T-13-r1-regression-rollback.md | active |
 | T-14-r1 | 2026-10-17 | fitur | Docker container runtime & dokumentasi README resmi | eb5b205 | docs/changes/T-14-r1-docker-and-readme.md | active |
+| T-15-r1 | 2026-10-17 | fitur | Refaktor UI De-Claude, selector gateway AI, dan daemon auto-worker | gate-T15-accept | docs/changes/T-15-r1-ui-de-claude-gateway-selector.md | active |

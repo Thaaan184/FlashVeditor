@@ -1388,7 +1388,7 @@ function studyCard(c){
   const rows=steps.map(s=>`<div class="sr ${s.done?'':'cur'}">${s.done?`<span class="okc">${ic('check',14,2.4)}</span>`:SPIN}<span>${esc(s.text)}${!s.done&&s.detail?' · '+esc(s.detail):''}</span></div>`).join('')
     +tdPlan(j).slice(steps.length,steps.length+Math.max(0,6-steps.length)).map(p=>`<div class="sr later"><i></i><span>${esc(p)}</span></div>`).join('');
   const t=j?jobStart(j):Date.now()/1000,f=j?jobFrac(j):0;
-  return `<div class="cs" id="sc-${esc(c.id)}"><div class="steps">${rows||`<div class="sr cur">${SPIN}<span>${j&&j.state==='queued'&&!S.listening?connectHTML('Waiting for Claude.'):'Starting'}</span></div>`}</div>
+  return `<div class="cs" id="sc-${esc(c.id)}"><div class="steps">${rows||`<div class="sr cur">${SPIN}<span>${j&&j.state==='queued'?connectHTML('Analysing'):'Starting'}</span></div>`}</div>
     <div class="who">${avaHTML(c.face)}<div style="min-width:0"><div class="nm">${esc(c.name)}</div><div class="t2">${esc(crSub({...c,studying:0}))}</div></div></div>
     <div><div class="t1" style="font-weight:600">Analysing ${n?n+' videos':'the videos'} · <span data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</span></div><div class="t2" style="white-space:normal;margin-top:4px">It keeps going if you leave.</div></div>
     <div class="bar"><i style="width:${Math.round((f||0)*100)}%"></i></div>
@@ -1481,7 +1481,7 @@ async function loadSkills(){try{const r=await fetch('/skills');if(r.ok){const j=
 function jobText(job){
   const jr=job.result||{};
   const c=job.claude;
-  return job.state==='queued'?(c&&c.opened?`<span class="cnx">${SPIN}Claude is opening in a new Terminal window.</span>`:c&&c.command?`<span class="cnx">Run this in a new Terminal window:<span class="codebox"><span>${esc(c.command)}</span><button class="hlink" onclick="copyText(${esc(JSON.stringify(c.command))},this)">Copy</button></span></span>`:S.listening?'Claude is picking this up.':connectHTML('Waiting for Claude.')):job.state==='taken'?`Claude: ${esc((job.steps.at(-1)||{}).text||'working on it')}`
+  return job.state==='queued'?connectHTML('Queued for AI Worker.'):job.state==='taken'?`AI Agent: ${esc((job.steps.at(-1)||{}).text||'working on it')}`
     :job.state==='done'?esc(jr.changed&&jr.changed.length?'Saved: '+jr.changed.join('; '):jr.summary||'Done.'):job.state==='failed'?esc(job.error||'That stopped.'):'';
 }
 // a chat box: what the user types goes to a Claude of its own (a new Terminal window, unless one is listening).
@@ -1823,22 +1823,20 @@ function planFor(j){
     ['You check the cut','The editor opens on your clip. Each new draft shows up there. Leave notes, or approve it.'],
     ['Captions, zooms and sound in '+st,studying?`Starts after you approve the cut, once ${a.as}'s style is analysed.`:'Starts after you approve the cut.']];
 }
-// nobody listening: "Connect Claude" opens a new Terminal with a listening Claude (launcher.connect, one at a time);
-// where no terminal can open (S.new_claude false), the old instruction
+// Status helper for AI worker connection
 function connectHTML(lead,old){
-  const c=ui.connect||{},t=S.connect?Date.now()/1000-S.connect:null,l=lead?esc(lead)+' ':'',stop='event.stopPropagation();';
-  if(c.command)return `<span class="cnx">${l}Run this in a new Terminal window:<span class="codebox"><span>${esc(c.command)}</span><button class="hlink" onclick="${stop}copyText(${esc(JSON.stringify(c.command))},this)">Copy</button></span></span>`;
-  if(t!=null&&t<60)return `<span class="cnx">${SPIN}Opening Claude in a new Terminal window...</span>`;
-  if(!S.new_claude)return `<span class="cnx">${l}${old||`Type ${CMD} in Terminal.`}</span>`;
-  if(t!=null)return `<span class="cnx">Claude didn't connect. Check the Terminal window it opened.<button class="btn sm" onclick="${stop}connectClaude()">Try again</button></span>`;
-  return `<span class="cnx">${l}<button class="btn dark sm" onclick="${stop}connectClaude()">Connect Claude</button></span>`;
+  const l=lead?esc(lead)+' ':'';
+  const gw=(S&&S.gateway)||{model:'ag/gemini-3.8-flash-high',provider:'9router'};
+  const prov=gw.provider==='9router'?'9Router (Gemini 3.8 Flash High)':gw.provider;
+  if(S&&S.listening)return `<span class="cnx okc">${l}AI Worker running · ${esc(prov)}</span>`;
+  return `<span class="cnx">${l}Auto-processing via ${esc(prov)}...</span>`;
 }
-async function stopJob(id){const r=await post('/stop',{id});toast(r.stopped?'Stopped. Claude stops at its next step.':'Stopped.');await load()}
-async function connectClaude(){if(ui.connecting)return;ui.connecting=1;try{const r=await post('/connect',{});ui.connect=r.status==='manual'?r:null}finally{ui.connecting=0}await load()}
+async function stopJob(id){const r=await post('/stop',{id});toast(r.stopped?'Stopped. AI Worker stops at its next step.':'Stopped.');await load()}
+async function connectClaude(){await load()}
 
 // ---- home (welcome back), your videos, my style, settings
-// where a video is (home.py phase): the user's turn, done, or what Claude is doing now
-const TURN={ask:"Your turn: answer Claude's question",cut:'Your turn: watch the cut',approve:'Your turn: approve the preview',edit:'Your turn: watch the edit'};
+// where a video is (home.py phase): the user's turn, done, or what AI is doing now
+const TURN={ask:"Your turn: answer question",cut:'Your turn: watch the cut',approve:'Your turn: approve the preview',edit:'Your turn: watch the edit'};
 const DOING={notes:'Fixing your notes',stills:'Making the preview',rendering:'Making the video',cutting:'Being made'};
 const vPh=v=>v.phase||(v.status==='done'?'done':v.status==='ready'?(v.stage==='cut'?'cut':'edit'):v.status==='making'?'notes':'cutting');
 // one count for Home and Your videos: done, your turn, being made
@@ -1936,13 +1934,14 @@ function obRows(plan,steps,nextLabel=true){
 }
 function obSetup(sj){
   const s=sj.steps.filter(x=>!x.done).at(-1),pct=readyPct();
-  const now=sj.state==='failed'?'Setup stopped':sj.state==='queued'?(S.listening?'Claude is picking this up':'Waiting for Claude'):s?s.text:'Starting';
+  const now=sj.state==='failed'?'Setup stopped':sj.state==='queued'?'Setting up environment...':s?s.text:'Starting';
   return `<div class="pgc obw"><div class="ph"><h1>Getting your computer ready</h1><p>Installing the free tools the editor runs on. This happens once.</p></div>
     <div class="obc"><div class="obnow"><div class="row" style="justify-content:space-between"><span class="cap">Now</span><b>${sj.state==='taken'?pct+'%':''}</b></div><div class="big">${esc(now)}</div><div class="trk ${sj.state==='queued'?'indet':''}" style="height:6px;border-radius:3px"><i style="width:${pct}%;height:6px"></i></div>
-      ${sj.state==='failed'?`<div class="msg bad">${CROSS}<span>${esc(sj.error||'Something did not install.')}</span></div><button class="b2" style="align-self:flex-start" onclick="queue({type:'setup'})">Try again</button>`:sj.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('',`Type ${CMD} in Terminal, or say "set up the editor" in Claude Code.`)}</div>`:''}</div>
+      ${sj.state==='failed'?`<div class="msg bad">${CROSS}<span>${esc(sj.error||'Something did not install.')}</span></div><button class="b2" style="align-self:flex-start" onclick="queue({type:'setup'})">Try again</button>`:sj.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('Environment setup is starting')}</div>`:''}</div>
       <div class="obrs">${obRows(SETUP_PLAN,sj.steps)}</div></div>
+    <div class="obnext">${stGateway()}</div>
     <div class="obnext"><div><span class="cap">Next, while this runs</span><b>Analyse a format</b><p>Paste 3 to 6 videos edited the same way. Setup keeps going in the background.</p></div><button class="b1" onclick="obAnalyseNow()">Analyse a format</button></div>
-    <div class="obnext"><div><span class="cap">Optional</span><b>Two free keys</b><p>They make your edits better. ElevenLabs hears every um and retake, so the cut is cleaner. Gemini reads the fonts and colours when it analyses a format. Skip them and Claude does those jobs instead.</p></div><button class="b2" onclick="ui.ob='keys';render()">Add keys now</button></div></div>`;
+    <div class="obnext"><div><span class="cap">Optional</span><b>Two free keys</b><p>They make your edits better. ElevenLabs hears every um and retake, so the cut is cleaner. Gemini reads fonts and colours via 9Router. Free, carrier-grade.</p></div><button class="b2" onclick="ui.ob='keys';render()">Add keys now</button></div></div>`;
 }
 const OBK=[{id:'gemini',tag:'reads the look',d:'Names the fonts and colours when it analyses a format.',skip:'Skip it and Claude looks at the frames itself. That uses more of your Claude usage. The key is free, no card.'},
   {id:'elevenlabs',tag:'exact words',d:'Keeps every "um" and false start, so the cut finds your retakes.',skip:'Skip it and the free transcriber on this computer does it. It misses some retakes. ElevenLabs has a free plan.'}];
@@ -2334,9 +2333,73 @@ function stLook(){
   const sw={light:'<i style="background:#FAFAF9"></i>',dark:'<i style="background:#161413"></i>',system:'<i style="background:linear-gradient(135deg,#FAFAF9 50%,#161413 50%)"></i>'};
   return `<div class="scd" style="flex-direction:row;align-items:center;justify-content:space-between;padding:16px 20px"><b style="font-size:17px;line-height:22px">Theme</b><div class="seg3">${['light','dark','system'].map(t=>`<button class="${cur===t?'on':''}" onclick="stTheme('${t}')">${sw[t]}${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`;
 }
+
+function stGateway(){
+  const gw=(S&&S.gateway)||{provider:'9router',gemini_model:'ag/gemini-3.8-flash-high',gemini_url:'http://100.96.207.8:20128'};
+  const cur=ui.gw_provider||gw.provider||'9router';
+  return `<div class="scd" style="gap:14px">
+    <div class="hd"><div class="row" style="gap:8px"><b>AI Gateway Connection</b><span class="schip okc" style="color:var(--oktext);background:var(--tile);border:1px solid var(--ok);font-size:12px;padding:2px 8px;border-radius:12px">● Active: ${esc(gw.provider)}</span></div></div>
+    <div class="t2" style="white-space:normal">Pilih koneksi AI Gateway untuk analisis visual & pembuatan video:</div>
+    <div class="seg3" style="width:100%">${[
+      ['9router','9Router Gateway'],
+      ['anthropic','Claude Direct'],
+      ['custom','Custom LLM']
+    ].map(([id,label])=>`<button class="${cur===id?'on':''}" style="font-size:12px" onclick="ui.gw_provider='${id}';render()">${label}</button>`).join('')}</div>
+    ${cur==='9router'?`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="t2">9Router Base URL:</div>
+        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_url||gw.gemini_url||'http://100.96.207.8:20128')}">
+        <div class="t2">Active Model (Antigravity):</div>
+        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_model||gw.gemini_model||'ag/gemini-3.8-flash-high')}">
+        <div class="t2" style="font-size:12px;color:var(--t3)">⚡ Menggunakan gateway lokal 9Router dengan Gemini 3.8 Flash High. Cepat, hemat token, carrier-grade.</div>
+      </div>
+    `:cur==='anthropic'?`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="t2">Anthropic Endpoint:</div>
+        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="https://api.anthropic.com">
+        <div class="t2">Anthropic Model:</div>
+        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="claude-3-7-sonnet-20250219">
+        <div class="t2">Anthropic API Key:</div>
+        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="sk-ant-api...">
+      </div>
+    `:`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="t2">Gateway URL:</div>
+        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="http://localhost:8000/v1">
+        <div class="t2">Model Name:</div>
+        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="my-model">
+        <div class="t2">API Key:</div>
+        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="Bearer token">
+      </div>
+    `}
+    <div class="row" style="gap:10px;justify-content:flex-end">
+      <button class="b1 s" onclick="saveGateway()">${ui.gw_saving?'Saving...':'Simpan & Hubungkan'}</button>
+    </div>
+    ${ui.gw_msg?`<div class="msg ${ui.gw_ok?'good':'bad'}"><span>${esc(ui.gw_msg)}</span></div>`:''}
+  </div>`;
+}
+
+async function saveGateway(){
+  const p=ui.gw_provider||'9router';
+  const url=($('#gw_url')||{}).value;
+  const mod=($('#gw_model')||{}).value;
+  const key=($('#gw_key')||{}).value;
+  ui.gw_saving=true;render();
+  try{
+    const r=await post('/gateway',{provider:p,gemini_url:url,gemini_model:mod,gemini_key:key,anthropic_url:url,anthropic_token:key});
+    ui.gw_saving=false;
+    ui.gw_ok=r.ok;
+    ui.gw_msg=r.ok?'Gateway connection updated & saved!':(r.error||'Gagal memperbarui gateway.');
+    await load();
+  }catch(e){
+    ui.gw_saving=false;ui.gw_ok=false;ui.gw_msg=e.message;
+  }
+  render();
+}
+
 function vSettings(){
-  return `<div class="pgc"><div class="ph"><h1>Settings</h1><p>Keys, updates, where your videos live, and the look.</p></div><div class="sgrid">
-    <div class="scol"><div class="scd" style="gap:16px"><div class="hd"><b>Keys</b><span class="st-lock">${ic('lock',14)}Saved on this computer only</span></div>${KEYS.map(stKey).join('')}${stModal()}</div></div>
+  return `<div class="pgc"><div class="ph"><h1>Settings</h1><p>Gateway connection, keys, where your videos live, and the look.</p></div><div class="sgrid">
+    <div class="scol">${stGateway()}<div class="scd" style="gap:16px"><div class="hd"><b>Keys</b><span class="st-lock">${ic('lock',14)}Saved on this computer only</span></div>${KEYS.map(stKey).join('')}${stModal()}</div></div>
     <div class="scol">${stUpdate()}${stFolder()}${stLook()}${stAlerts()}
       <div class="scd"><label class="srow" style="cursor:pointer"><div><div>Recent clips</div><div class="t2">From Movies, Desktop and Downloads</div></div><input type="checkbox" class="st-check" ${R&&R.scan_home?'checked':''} onchange="scanHome(this.checked)"></label>
         ${toolsRow()}</div></div></div></div>`;

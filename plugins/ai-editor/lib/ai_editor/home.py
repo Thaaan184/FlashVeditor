@@ -1994,6 +1994,13 @@ def make_handler(token):
                 d["profile"] = (home().parent / "profile.json").exists()   # set up before: a returning user
                 d["update"] = {**update_info(), "claude": d.get("claude_v")}   # the version the last Claude command ran
                 d["getting_started"] = getting_started(d)
+                d["gateway"] = {
+                    "provider": os.environ.get("AI_GATEWAY_PROVIDER", "9router"),
+                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_model": os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high"),
+                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128"),
+                    "anthropic_model": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
+                }
                 import launcher   # a Claude of its own per video only where a terminal window can be opened
                 d["new_claude"] = bool(launcher.terminal(d["root"], ["claude"], platform.system()))
                 d["page"] = f'{live.page_version(HTML, HTML.with_name("ask.js"))}-{my_version()}'   # the tab reloads when this changes (an update too)
@@ -2010,6 +2017,14 @@ def make_handler(token):
                     except (OSError, ValueError):
                         td["format"] = None
                 return self.send(200, d)
+            if path == "/gateway":
+                return self.send(200, {
+                    "active_provider": os.environ.get("AI_GATEWAY_PROVIDER", "9router"),
+                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_model": os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high"),
+                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128"),
+                    "anthropic_model": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
+                })
             q = parse_qs(urlsplit(self.path).query)
             if path == "/library":
                 root, jobs = read()["root"], read()["jobs"]
@@ -2164,6 +2179,37 @@ def make_handler(token):
                 except ValueError:
                     return self.send(400, {"error": "light, dark or system"})
                 return self.send(200, {"theme": theme()})
+            if path == "/gateway":
+                provider = body.get("provider", "9router")
+                os.environ["AI_GATEWAY_PROVIDER"] = provider
+                if "gemini_url" in body and body["gemini_url"]:
+                    os.environ["GEMINI_BASE_URL"] = body["gemini_url"]
+                if "gemini_model" in body and body["gemini_model"]:
+                    os.environ["GEMINI_MODEL"] = body["gemini_model"]
+                if "gemini_key" in body and body["gemini_key"]:
+                    os.environ["GEMINI_API_KEY"] = body["gemini_key"]
+                if "anthropic_url" in body and body["anthropic_url"]:
+                    os.environ["ANTHROPIC_BASE_URL"] = body["anthropic_url"]
+                if "anthropic_token" in body and body["anthropic_token"]:
+                    os.environ["ANTHROPIC_AUTH_TOKEN"] = body["anthropic_token"]
+
+                cfg = Path.home() / ".config" / "creator-teardown" / ".env"
+                try:
+                    cfg.parent.mkdir(parents=True, exist_ok=True)
+                    lines = [
+                        f"AI_GATEWAY_PROVIDER={os.environ.get('AI_GATEWAY_PROVIDER', '9router')}",
+                        f"GEMINI_BASE_URL={os.environ.get('GEMINI_BASE_URL', '')}",
+                        f"GEMINI_MODEL={os.environ.get('GEMINI_MODEL', '')}",
+                        f"GEMINI_FRAME_SAMPLING={os.environ.get('GEMINI_FRAME_SAMPLING', '1')}",
+                        f"GEMINI_API_KEY={os.environ.get('GEMINI_API_KEY', '')}",
+                        f"ANTHROPIC_BASE_URL={os.environ.get('ANTHROPIC_BASE_URL', '')}",
+                        f"ANTHROPIC_AUTH_TOKEN={os.environ.get('ANTHROPIC_AUTH_TOKEN', '')}",
+                    ]
+                    cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                    cfg.chmod(0o600)
+                except OSError:
+                    pass
+                return self.send(200, {"ok": True, "provider": provider, "model": os.environ.get("GEMINI_MODEL")})
             if path == "/key":
                 name, val = body.get("name"), str(body.get("value") or "").strip()
                 if name not in KEY_NAMES or not val or len(val) > 400 or re.search(r"\s", val):
