@@ -1,0 +1,12 @@
+task: T-13
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - check_plugins: "PASS (plugins ok)"
+  - smoke_test: "PASS (10 stills, dual render 4s ok di Linux)"
+  - check_docs: "PASS (check_docs: ok, semua trailer valid)"
+  - rollback_drill: "PASS (baseline-original tag tervalidasi dan reversibility 100% terjaga)"
+  - revert_guide: "PASS (docs/REVERT.md memuat panduan lengkap per tugas & total)"
+  - zero_secrets: "PASS (0 key/token di log bukti)"

@@ -14,3 +14,4 @@
 | T-10-r1 | 2026-10-17 | verifikasi | Visual creator-teardown via 9Router (ag/gemini-3.8-flash-high) | 1af921a | docs/changes/T-10-r1-teardown-gemini.md | active |
 | T-11-r1 | 2026-10-17 | verifikasi | Suite uji Web-QA (W-01 s/d W-13) konsisten 3x | f65ddf9 | docs/changes/T-11-r1-webqa-suite.md | active |
 | T-12-r1 | 2026-10-17 | verifikasi | Audit Red-Team mandiri fault injection (F-01 s/d F-13) | 76da572 | docs/changes/T-12-r1-redteam-audit.md | active |
+| T-13-r1 | 2026-10-17 | verifikasi | Regresi plugin, integritas docs, dan latihan rollback | 48fed08 | docs/changes/T-13-r1-regression-rollback.md | active |

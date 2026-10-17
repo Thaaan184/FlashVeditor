@@ -1,0 +1,14 @@
+=== T-13 REGRESSION & ROLLBACK DRILL ===
+[T-13.1] tests/check_plugins.py PASSED (plugins ok)
+[T-13.2] .audit/check_docs.py PASSED (commit trailers 100% compliant)
+[T-13.3] Tag baseline-original verified at commit 922fb75b9bf4ae2286c4fe44fc17229e92d17bdd
+[T-13.4] Clean diff against baseline-original:
+.audit/baseline/smoke-baseline.txt                 |   1 +
+ .audit/evidence/T-02/mock-test.txt                 |   7 +
+ .audit/evidence/T-02/real-call.txt                 |   7 +
+ .audit/evidence/T-06/model-mapping-log.txt         |  18 +
+ .audit/evidence/T-07/launcher-env-sanitation.txt   |  15 +
+ ...
+[T-13.5] docs/REVERT.md verified with complete revert instructions
+
+All regression checks and rollback drills PASSED.
