@@ -16,6 +16,7 @@ services:
       - GEMINI_API_VERSION=${GEMINI_API_VERSION:-v1beta}
       - GEMINI_AUTH_MODE=${GEMINI_AUTH_MODE:-bearer}
       - GEMINI_MODEL=${GEMINI_MODEL:-ag/gemini-3.8-flash-high}
+      - GEMINI_FRAME_SAMPLING=${GEMINI_FRAME_SAMPLING:-1}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-FlashVeditor}
       # Claude Code / Anthropic settings (jika menggunakan agen)
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-http://host.docker.internal:20128}

@@ -149,7 +149,9 @@ Judge only what is on screen. Captions are the words burned in that follow the s
 
 def video_bytes(path):
     """The video, silent, 480 px tall, 2 fps: a few hundred KB, sent inline."""
-    if os.environ.get("GEMINI_FRAME_SAMPLING", "0").lower() in ("1", "true", "yes"):
+    is_custom_gateway = BASE != "https://generativelanguage.googleapis.com"
+    default_sampling = "1" if is_custom_gateway else "0"
+    if os.environ.get("GEMINI_FRAME_SAMPLING", default_sampling).lower() in ("1", "true", "yes"):
         with tempfile.TemporaryDirectory() as d:
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-vf",
                             "fps=1,scale=-2:480", "-q:v", "5", f"{d}/f%03d.jpg"], check=True)

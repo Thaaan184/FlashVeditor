@@ -8,6 +8,7 @@ GEMINI_BASE_URL=${GEMINI_BASE_URL:-http://host.docker.internal:20128}
 GEMINI_API_VERSION=${GEMINI_API_VERSION:-v1beta}
 GEMINI_AUTH_MODE=${GEMINI_AUTH_MODE:-bearer}
 GEMINI_MODEL=${GEMINI_MODEL:-ag/gemini-3.8-flash-high}
+GEMINI_FRAME_SAMPLING=${GEMINI_FRAME_SAMPLING:-1}
 GEMINI_API_KEY=${GEMINI_API_KEY:-FlashVeditor}
 EOF
 chmod 600 "$HOME/.config/creator-teardown/.env"
