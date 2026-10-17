@@ -2046,6 +2046,7 @@ def make_handler(token):
                     self.send_header(hk, hv)
 
                 if is_page:
+                    self.send_header("Set-Cookie", f"{self.cookie_name()}={token}; Path=/; SameSite=Lax")
                     self.send_header("Set-Cookie", f"ave_review_port={port}; Path=/; SameSite=Lax")
                     self.send_header("Set-Cookie", f"ave_review_token={token}; Path=/; SameSite=Lax")
                     self.send_header("Set-Cookie", f"ave-review-{port}={token}; Path=/; SameSite=Lax")
@@ -2066,13 +2067,14 @@ def make_handler(token):
             if not ("*" in allowed or host in allowed or any(h.startswith(".") and (host.endswith(h) or host == h.lstrip(".")) for h in allowed)):
                 return False
             q = parse_qs(urlsplit(self.path).query).get("t", [""])[0]
+            ref_q = parse_qs(urlsplit(self.headers.get("Referer", "")).query).get("t", [""])[0]
             c = SimpleCookie()
             try:
                 c.load(self.headers.get("Cookie") or "")
             except Exception:
                 pass
             got = c[self.cookie_name()].value if self.cookie_name() in c else ""
-            return any(hmac.compare_digest(v.encode(), token.encode()) for v in (q, got) if v)
+            return any(hmac.compare_digest(v.encode(), token.encode()) for v in (q, got, ref_q) if v)
 
         def send(self, code, body, ctype="application/json", cookie=False, cache="no-store"):
             if isinstance(body, (dict, list)):
