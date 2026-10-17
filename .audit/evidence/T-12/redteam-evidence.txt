@@ -1,0 +1,23 @@
+=== T-12 RED-TEAM INDEPENDENT FAULT INJECTION EVIDENCE LOG ===
+Execution Time: 2026-10-17 15:49:40 UTC
+Python: /home/ids/.ai-video-editor/venv/bin/python
+Repository: /home/ids/projects/FlashVeditor
+Branch: feat/9router-gateway
+Agent: redteam (impartial audit)
+----------------------------------------------------------------------
+[PASS] F-01: Gateway Connection Refused handled cleanly via SystemExit ('Gemini unreachable'), zero key leak
+[PASS] F-02: Gateway Connection Timeout caught gracefully via SystemExit ('The read operation timed out'), zero key leak
+[PASS] F-03: HTTP 401 Unauthorized rejected cleanly with remediation guide, zero key leak
+[PASS] F-04: HTTP 429 Rate Limiting backoff retries exhausted and terminated gracefully, zero key leak
+[PASS] F-05: HTTP 500 Internal Server Error handled cleanly without uncaught tracebacks, zero key leak
+[PASS] F-06: HTTP 404 Model Not Found handled with automatic model fallback to gemini-3.5-flash-lite
+[PASS] F-07: Malformed JSON handled: key-value recovery succeeds, irrecoverable truncation raises JSONDecodeError cleanly
+[PASS] F-08: Non-JSON HTML garbage response rejected cleanly with JSONDecodeError, no silent state corruption
+[PASS] F-09: Markdown-wrapped codeblock JSON stripped and parsed with 100% field fidelity
+[PASS] F-10: CSRF protection validated: legitimate Origin accepted, untrusted/spoofed Origins blocked HTTP 403
+[PASS] F-11: Path Traversal defense verified: dot-dot escape attempts returned HTTP 404/403, directory sandbox held
+[PASS] F-12: Zero secret leakage: raw credentials excluded from logs/stderr, all tokens sanitized to [REDACTED]
+[PASS] F-13: Protected paths guard verified (exit code 2 on protected paths, 0 on allowed), protected files 100% pristine
+----------------------------------------------------------------------
+TOTAL RESULTS: 13/13 checks PASSED (100% green).
+VERDICT: accept - zero high/critical vulnerabilities, fault tolerance verified.

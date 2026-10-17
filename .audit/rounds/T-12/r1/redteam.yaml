@@ -1,0 +1,21 @@
+task: T-12
+round: 1
+agent: redteam
+verdict: accept
+findings: []
+verified:
+  - f01_connection_refused: "PASS (gateway connection refused caught cleanly via SystemExit, zero key leak)"
+  - f02_connection_timeout: "PASS (read/socket timeout handled gracefully without hanging indefinitely, zero key leak)"
+  - f03_http_401_unauthorized: "PASS (HTTP 401 rejected with actionable remediation guide, zero key leak)"
+  - f04_http_429_rate_limit: "PASS (HTTP 429 backoff retries handled cleanly, zero key leak)"
+  - f05_http_500_server_error: "PASS (HTTP 500 server error handled cleanly without uncaught tracebacks, zero key leak)"
+  - f06_http_404_model_fallback: "PASS (HTTP 404 handled with graceful fallback to gemini-3.5-flash-lite)"
+  - f07_malformed_json_tolerance: "PASS (key-value line recovery works, fatal truncation raises JSONDecodeError cleanly)"
+  - f08_non_json_garbage_handling: "PASS (HTML/proxy error response on HTTP 200 rejected cleanly with JSONDecodeError)"
+  - f09_markdown_wrapped_json: "PASS (markdown codeblock fences stripped, 100% field extraction fidelity)"
+  - f10_csrf_untrusted_origin: "PASS (untrusted and spoofed Origin headers rejected with HTTP 403 Forbidden)"
+  - f11_path_traversal_defense: "PASS (path traversal escape probes blocked with HTTP 404/403, directory sandbox intact)"
+  - f12_secret_leakage_audit: "PASS (zero raw API keys/tokens exposed in logs or repository, all tokens masked with [REDACTED])"
+  - f13_protected_paths_guard: "PASS (guard.py blocks protected paths with exit code 2, all protected files 100% untouched)"
+evidence: ".audit/evidence/T-12/redteam-evidence.txt"
+summary: "All 13 fault injection cases (F-01 s/d F-13) passed without unhandled exceptions or data leakage. Zero high/critical vulnerabilities identified."

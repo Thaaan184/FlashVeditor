@@ -13,3 +13,4 @@
 | T-09-r1 | 2026-10-17 | verifikasi | Smoke test style-edit (plan.json) & render Remotion (render.mp4) | 592d63e | docs/changes/T-09-r1-smoke-style-render.md | active |
 | T-10-r1 | 2026-10-17 | verifikasi | Visual creator-teardown via 9Router (ag/gemini-3.8-flash-high) | 1af921a | docs/changes/T-10-r1-teardown-gemini.md | active |
 | T-11-r1 | 2026-10-17 | verifikasi | Suite uji Web-QA (W-01 s/d W-13) konsisten 3x | f65ddf9 | docs/changes/T-11-r1-webqa-suite.md | active |
+| T-12-r1 | 2026-10-17 | verifikasi | Audit Red-Team mandiri fault injection (F-01 s/d F-13) | 76da572 | docs/changes/T-12-r1-redteam-audit.md | active |
