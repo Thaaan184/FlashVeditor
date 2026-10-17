@@ -2335,7 +2335,7 @@ function stLook(){
 }
 
 function stGateway(){
-  const gw=(S&&S.gateway)||{provider:'9router',gemini_model:'ag/gemini-3.8-flash-high',gemini_url:'http://100.96.207.8:20128'};
+  const gw=(S&&S.gateway)||{provider:'9router',gemini_model:'ag/gemini-3.8-flash-high',gemini_url:'http://100.96.207.8:20128/v1',gemini_key:''};
   const cur=ui.gw_provider||gw.provider||'9router';
   return `<div class="scd" style="gap:14px">
     <div class="hd"><div class="row" style="gap:8px"><b>AI Gateway Connection</b><span class="schip okc" style="color:var(--oktext);background:var(--tile);border:1px solid var(--ok);font-size:12px;padding:2px 8px;border-radius:12px">● Active: ${esc(gw.provider)}</span></div></div>
@@ -2348,28 +2348,30 @@ function stGateway(){
     ${cur==='9router'?`
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="t2">9Router Base URL:</div>
-        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_url||gw.gemini_url||'http://100.96.207.8:20128')}">
+        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_url||gw.gemini_url||'http://100.96.207.8:20128/v1')}">
+        <div class="t2">9Router API Key:</div>
+        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_key||gw.gemini_key||'')}" placeholder="sk-...">
         <div class="t2">Active Model (Antigravity):</div>
         <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_model||gw.gemini_model||'ag/gemini-3.8-flash-high')}">
-        <div class="t2" style="font-size:12px;color:var(--t3)">⚡ Menggunakan gateway lokal 9Router dengan Gemini 3.8 Flash High. Cepat, hemat token, carrier-grade.</div>
+        <div class="t2" style="font-size:12px;color:var(--t3)">⚡ Menggunakan gateway 9Router dengan Gemini 3.8 Flash High. Didukung autentikasi Bearer / sk- key.</div>
       </div>
     `:cur==='anthropic'?`
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="t2">Anthropic Endpoint:</div>
         <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="https://api.anthropic.com">
-        <div class="t2">Anthropic Model:</div>
-        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="claude-3-7-sonnet-20250219">
         <div class="t2">Anthropic API Key:</div>
         <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="sk-ant-api...">
+        <div class="t2">Anthropic Model:</div>
+        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="claude-3-7-sonnet-20250219">
       </div>
     `:`
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="t2">Gateway URL:</div>
         <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="http://localhost:8000/v1">
-        <div class="t2">Model Name:</div>
-        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="my-model">
         <div class="t2">API Key:</div>
         <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="Bearer token">
+        <div class="t2">Model Name:</div>
+        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="my-model">
       </div>
     `}
     <div class="row" style="gap:10px;justify-content:flex-end">

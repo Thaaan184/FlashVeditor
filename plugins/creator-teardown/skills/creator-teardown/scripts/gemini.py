@@ -77,6 +77,8 @@ _load_env_file()
 
 # Base configuration from environment with defaults
 BASE = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+if BASE.endswith("/v1") or BASE.endswith("/v1beta"):
+    BASE = BASE.rsplit("/", 1)[0]
 VER = os.environ.get("GEMINI_API_VERSION", "v1beta").strip("/")
 MODELS = [os.environ["GEMINI_MODEL"]] if os.environ.get("GEMINI_MODEL") else \
     ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
@@ -94,8 +96,9 @@ def upload_url():
 
 def headers(key):
     h = {"Content-Type": "application/json"}
-    if os.environ.get("GEMINI_AUTH_MODE", "").lower() == "bearer":
+    if os.environ.get("GEMINI_AUTH_MODE", "").lower() == "bearer" or (key and str(key).startswith("sk-")):
         h["Authorization"] = f"Bearer {key}"
+        h["x-goog-api-key"] = key
     else:
         h["x-goog-api-key"] = key
     return h

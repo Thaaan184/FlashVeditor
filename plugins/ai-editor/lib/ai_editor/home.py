@@ -1996,9 +1996,10 @@ def make_handler(token):
                 d["getting_started"] = getting_started(d)
                 d["gateway"] = {
                     "provider": os.environ.get("AI_GATEWAY_PROVIDER", "9router"),
-                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "gemini_model": os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high"),
-                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_key": os.environ.get("GEMINI_API_KEY", ""),
+                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "anthropic_model": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
                 }
                 import launcher   # a Claude of its own per video only where a terminal window can be opened
@@ -2020,9 +2021,10 @@ def make_handler(token):
             if path == "/gateway":
                 return self.send(200, {
                     "active_provider": os.environ.get("AI_GATEWAY_PROVIDER", "9router"),
-                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "gemini_model": os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high"),
-                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128"),
+                    "gemini_key": os.environ.get("GEMINI_API_KEY", ""),
+                    "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "anthropic_model": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
                 })
             q = parse_qs(urlsplit(self.path).query)
@@ -2188,27 +2190,33 @@ def make_handler(token):
                     os.environ["GEMINI_MODEL"] = body["gemini_model"]
                 if "gemini_key" in body and body["gemini_key"]:
                     os.environ["GEMINI_API_KEY"] = body["gemini_key"]
+                    os.environ["ANTHROPIC_AUTH_TOKEN"] = body["gemini_key"]
                 if "anthropic_url" in body and body["anthropic_url"]:
                     os.environ["ANTHROPIC_BASE_URL"] = body["anthropic_url"]
                 if "anthropic_token" in body and body["anthropic_token"]:
                     os.environ["ANTHROPIC_AUTH_TOKEN"] = body["anthropic_token"]
 
-                cfg = Path.home() / ".config" / "creator-teardown" / ".env"
+                targets = [Path.home() / ".config" / "creator-teardown" / ".env"]
                 try:
-                    cfg.parent.mkdir(parents=True, exist_ok=True)
-                    lines = [
-                        f"AI_GATEWAY_PROVIDER={os.environ.get('AI_GATEWAY_PROVIDER', '9router')}",
-                        f"GEMINI_BASE_URL={os.environ.get('GEMINI_BASE_URL', '')}",
-                        f"GEMINI_MODEL={os.environ.get('GEMINI_MODEL', '')}",
-                        f"GEMINI_FRAME_SAMPLING={os.environ.get('GEMINI_FRAME_SAMPLING', '1')}",
-                        f"GEMINI_API_KEY={os.environ.get('GEMINI_API_KEY', '')}",
-                        f"ANTHROPIC_BASE_URL={os.environ.get('ANTHROPIC_BASE_URL', '')}",
-                        f"ANTHROPIC_AUTH_TOKEN={os.environ.get('ANTHROPIC_AUTH_TOKEN', '')}",
-                    ]
-                    cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                    cfg.chmod(0o600)
-                except OSError:
+                    targets.append(keys.key_file())
+                except Exception:
                     pass
+                for cfg in targets:
+                    try:
+                        cfg.parent.mkdir(parents=True, exist_ok=True)
+                        lines = [
+                            f"AI_GATEWAY_PROVIDER={os.environ.get('AI_GATEWAY_PROVIDER', '9router')}",
+                            f"GEMINI_BASE_URL={os.environ.get('GEMINI_BASE_URL', '')}",
+                            f"GEMINI_MODEL={os.environ.get('GEMINI_MODEL', '')}",
+                            f"GEMINI_FRAME_SAMPLING={os.environ.get('GEMINI_FRAME_SAMPLING', '1')}",
+                            f"GEMINI_API_KEY={os.environ.get('GEMINI_API_KEY', '')}",
+                            f"ANTHROPIC_BASE_URL={os.environ.get('ANTHROPIC_BASE_URL', '')}",
+                            f"ANTHROPIC_AUTH_TOKEN={os.environ.get('ANTHROPIC_AUTH_TOKEN', '')}",
+                        ]
+                        cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                        cfg.chmod(0o600)
+                    except OSError:
+                        pass
                 return self.send(200, {"ok": True, "provider": provider, "model": os.environ.get("GEMINI_MODEL")})
             if path == "/key":
                 name, val = body.get("name"), str(body.get("value") or "").strip()
