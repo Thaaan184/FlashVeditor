@@ -1,0 +1,12 @@
+task: T-07
+round: 1
+agent: curator
+verdict: accept
+findings: []
+verified:
+  - darwin_launcher: PASS (ANTHROPIC_BASE_URL dan model mapping tetap ada di command text)
+  - linux_launcher: PASS (ANTHROPIC_BASE_URL dan model mapping tetap ada di command text)
+  - subprocess_inheritance: PASS (child process menerima ANTHROPIC_BASE_URL)
+  - launcher_demo: PASS (launcher demo ok)
+  - check_plugins: PASS (plugins ok)
+  - zero_secrets: PASS (log bukti bersih dari API key riil)

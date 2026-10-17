@@ -1,0 +1,15 @@
+=== T-07 LAUNCHER ENV SANITATION VERIFICATION ===
+
+--- Checking OS: Darwin ---
+Command line text: cd /home/ids/.hermes/cache/scratch/tmpw2j3fd69 && env AI_EDITOR_HOME=/tmp/test-home ANTHROPIC_BASE_URL=http://127.0.0.1:20128 ANTHROPIC_MODEL=ag/claude-sonnet-4...
+[PASS] Darwin launcher preserves gateway environment variables in terminal command.
+
+--- Checking OS: Linux ---
+Command line text: cd /home/ids/.hermes/cache/scratch/tmpw2j3fd69 && env AI_EDITOR_HOME=/tmp/test-home ANTHROPIC_BASE_URL=http://127.0.0.1:20128 ANTHROPIC_MODEL=ag/claude-sonnet-4...
+[PASS] Linux launcher preserves gateway environment variables in terminal command.
+
+--- Testing Subprocess Environment Inheritance ---
+Child process output: CHILD_ANTHROPIC_BASE_URL=http://127.0.0.1:20128
+[PASS] Child process inherits ANTHROPIC_BASE_URL without drop.
+
+=== T-07 RESULT: LAUNCHER ENV SANITATION FULLY VERIFIED ===

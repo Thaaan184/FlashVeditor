@@ -172,9 +172,14 @@ def open_claude(folder, prompt, os_name=None, run=start):
     run(argv, folder, os_name) -> bool; the demos pass a recorder so no real window opens."""
     os_name = os_name or platform.system()
     cmd = plan(os_name, prompt=prompt)
-    # the window's own folders: a Terminal opened by osascript does not inherit them, so the new Claude would
-    # listen on another home. Windows and x-terminal-emulator start as children and inherit them.
-    pairs = [f"{k}={os.environ[k]}" for k in ("AI_EDITOR_HOME", "AI_EDITOR_LIBRARY") if os.environ.get(k)]
+    # the window's own folders & gateway config: a Terminal opened by osascript does not inherit them,
+    # so the new Claude would listen on another home or lose gateway configuration.
+    env_keys = ("AI_EDITOR_HOME", "AI_EDITOR_LIBRARY", "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",
+                "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+                "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                "GEMINI_BASE_URL", "GEMINI_API_VERSION", "GEMINI_AUTH_MODE", "GEMINI_MODEL",
+                "GEMINI_FRAME_SAMPLING")
+    pairs = [f"{k}={os.environ[k]}" for k in env_keys if os.environ.get(k)]
     if pairs and os_name != "Windows":
         cmd = ["env", *pairs] + cmd
     text = (f"cd /d {show([str(folder)], os_name)} && " if os_name == "Windows" else f"cd {show([str(folder)], os_name)} && ") \
