@@ -203,11 +203,18 @@ def process_cut_feedback(edit_folder, root_dir, rdata):
 
     print(f"[WORKER] Processing {len(open_comments)} feedback note(s) for {edit_folder.name}...", flush=True)
     words_file = edit_folder / "words.json"
+    words_raw_file = edit_folder / "words.raw.json"
     transcript_file = edit_folder / "transcript.txt"
     words_data = []
     if words_file.exists():
         try:
             words_data = json.loads(words_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    words_raw_data = []
+    if words_raw_file.exists():
+        try:
+            words_raw_data = json.loads(words_raw_file.read_text(encoding="utf-8"))
         except Exception:
             pass
 
@@ -228,10 +235,10 @@ def process_cut_feedback(edit_folder, root_dir, rdata):
 
         if m:
             old_w, new_w = m.group(1), m.group(2)
+            target_clean = old_w.strip(" ,.-").lower()
             replaced = False
             for w in words_data:
                 w_clean = w.get("text", "").strip(" ,.-").lower()
-                target_clean = old_w.strip(" ,.-").lower()
                 if w_clean == target_clean or target_clean in w_clean or target_clean in w.get("text", "").lower():
                     orig = w.get("text", "")
                     if orig.endswith(",") and not new_w.endswith(","):
@@ -244,6 +251,18 @@ def process_cut_feedback(edit_folder, root_dir, rdata):
             if replaced:
                 reply = f"Changed '{old_w}' to '{new_w}'"
                 words_file.write_text(json.dumps(words_data, indent=1), encoding="utf-8")
+                if words_raw_data:
+                    for rw in words_raw_data:
+                        rw_clean = rw.get("text", "").strip(" ,.-").lower()
+                        if rw_clean == target_clean or target_clean in rw_clean or target_clean in rw.get("text", "").lower():
+                            orig = rw.get("text", "")
+                            if orig.endswith(",") and not new_w.endswith(","):
+                                rw["text"] = new_w + ","
+                            elif orig.endswith(".") and not new_w.endswith("."):
+                                rw["text"] = new_w + "."
+                            else:
+                                rw["text"] = new_w
+                    words_raw_file.write_text(json.dumps(words_raw_data, indent=1), encoding="utf-8")
                 if transcript_file.exists():
                     t_text = transcript_file.read_text(encoding="utf-8")
                     t_text = re.sub(re.escape(old_w), new_w, t_text, flags=re.IGNORECASE)
