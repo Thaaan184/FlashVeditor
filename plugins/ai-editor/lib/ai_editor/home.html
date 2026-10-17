@@ -1858,7 +1858,7 @@ function vStat(v){
   if(ph==='done')return {ok:1,txt:v.duration?`Done. ${fmtT(Math.round(v.duration))} long`:'Done',btn:open};
   if(TURN[ph])return {txt:TURN[ph],title:TURN[ph],frac:1,btn:open};
   const j=vJob(v);
-  if(j){const s=j.steps.filter(x=>!x.done).at(-1),t=s?s.t:jobStart(j),w=s?s.text:j.state==='queued'?((j.claude||{}).opened?'Claude is working on this video in its own Terminal window':S.listening?(S.busy&&S.busy.id!==j.id?'Waiting for Claude':'Starting'):'Waiting for Claude'):'Starting';
+  if(j){const s=j.steps.filter(x=>!x.done).at(-1),t=s?s.t:jobStart(j),w=s?s.text:(j.state==='queued'?'Starting':(j.state==='done'?'Done':'Working'));
     return {title:w,txt:`${esc(w)} · <span data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</span>`,frac:j.state==='queued'?0:jobFrac(j),btn:see}}
   return {txt:DOING[ph]||'Being made',frac:null,btn:see};
 }
@@ -2011,11 +2011,11 @@ function obDrop(){
 // Home while the first video is being made, and once its cut is ready (then Getting started is done)
 function firstVideoHome(v){
   const j=vJob(v),ph=vPh(v),ready=ph==='done'||!!TURN[ph];
-  const how={cut:'Open the editor to check the cut. Strike or bring back any word, then approve it. Claude adds captions, zooms and sound next.',
-    approve:'Open the editor to check the preview. Approve it and Claude makes the video.',edit:'Open the editor to watch the edit. Leave notes, or approve it.',
+  const how={cut:'Open the editor to check the cut. Strike or bring back any word, then approve it. AI Editor adds captions, zooms and sound next.',
+    approve:'Open the editor to check the preview. Approve it and AI Editor makes the video.',edit:'Open the editor to watch the edit. Leave notes, or approve it.',
     done:'Open the editor to watch it again or download it.'}[ph];
   const side=ready?`<div class="obc" style="padding:24px;gap:12px;justify-content:space-between"><div><div class="row" style="gap:10px">${OKDOT}<b style="font-size:17px">You're all set up</b></div><p class="t2" style="white-space:normal;font-size:15px;line-height:22px;color:var(--t2);margin:10px 0 0">${how}</p></div><p class="t2" style="white-space:normal;font-size:14px">Next time, drop a clip anywhere on Home or press New video.</p></div>`
-    :`<div class="obc"><div class="obrs">${j?obRows(planFor(j).map(p=>p[0]),j.steps):'<div class="obr cur"><i class="ring2"></i><span>Claude is working on it</span></div>'}</div></div>`;
+    :`<div class="obc"><div class="obrs">${j?obRows(planFor(j).map(p=>p[0]),j.steps):'<div class="obr cur"><i class="ring2"></i><span>AI Editor is working on it</span></div>'}</div></div>`;
   if(v.sample){   // the sample is a try-out, not your first video: Getting started carries on beside it
     const g=GS(),keys=KEYS.filter(k=>!(S.keys[k.id]||{}).set).length;
     const row=(done,t,sub,btn)=>`<div class="obr" style="color:var(--ink);align-items:flex-start">${done?OKDOT:'<i></i>'}<span>${t}${sub?`<br><small class="t2" style="white-space:normal">${sub}</small>`:''}${btn?`<span style="display:flex;margin-top:8px">${btn}</span>`:''}</span></div>`;
@@ -2118,13 +2118,13 @@ const JOBNAME={video:'Making',teardown:'Analysing',skill:'Building a skill',setu
 function jobInfo(){
   const act=S.jobs.filter(j=>j.state==='queued'||j.state==='taken'),j=busyJob(),mk=(L?L.videos:[]).filter(v=>v.status==='making'||v.status==='cutting');
   const nv2=Math.max(mk.length,act.filter(x=>x.type==='video').length);
-  if(!j){if(!mk.length)return null;return {label:`Making ${mk.length}`,short:'Making',n:mk.length,text:`${{notes:'Claude is fixing your notes in',stills:'Claude is making the preview for',rendering:'Claude is finishing'}[vPh(mk[0])]||'Claude is making'} ${mk[0].name}`,frac:null,since:null,go:"ui.fold.videos=null;rgo('videos')"}}
+  if(!j){if(!mk.length)return null;return {label:`Making ${mk.length}`,short:'Making',n:mk.length,text:`${{notes:'AI Editor is fixing notes in',stills:'AI Editor is making preview for',rendering:'AI Editor is finishing'}[vPh(mk[0])]||'AI Editor is making'} ${mk[0].name}`,frac:null,since:null,go:"ui.fold.videos=null;rgo('videos')"}}
   const n=j.type==='video'?nv2:act.filter(x=>x.type===j.type).length,s=farStep(j);
   const last=Math.max(j.u||0,s?s.t||0:0,S.claude_seen||0)||jobStart(j),age=Math.max(0,Math.round(Date.now()/1000-last));
   const vn=j.type==='video'&&j.args.edit&&(((L?L.videos:[]).find(v=>v.dir===j.args.edit)||{}).name||j.args.edit.split(/[\\/]/).pop());
   const what=j.type==='video'&&j.args.edit?' in '+j.args.edit.split(/[\\/]/).pop():j.type==='teardown'&&j.args.handle?' · '+styleName('@'+j.args.handle):'';
-  const how=S.new_claude?'':` Type ${CMD} in Terminal.`,own=(j.claude||{}).opened,text=j.state==='queued'?(own?'Claude is working on this video in its own Terminal window.':S.listening?'Claude is picking this up.':'Waiting for Claude.'+how)
-    :j.owner!=='home'&&!S.listening&&!own&&age>60?'Claude is not listening.'+how:vn?`Claude is working on ${vn}: ${s?s.text:'Starting'}`:(s?tdStep(j,s.text):'Starting')+what;
+  const how='',own=(j.claude||{}).opened,text=j.state==='queued'?(own?'AI Editor is working on this video.':S.listening?'AI Editor is picking this up.':'AI Editor is starting...')
+    :j.owner!=='home'&&!S.listening&&!own&&age>60?'AI Editor is busy.':vn?`AI Editor is working on ${vn}: ${s?s.text:'Starting'}`:(s?tdStep(j,s.text):'Starting')+what;
   const name=JOBNAME[j.type]||'Working',go=j.type==='video'?"ui.fold.videos=null;rgo('videos')":j.type==='teardown'||j.type==='skill'?"rgo('mystyle')":j.type==='skill-change'||j.type==='skill-new'?"rgo('skills')":j.type==='setup'?'goHome()':j.type==='update'||j.owner==='home'?"rgo('settings')":'';
   return {id:j.id,label:j.type==='video'||j.type==='teardown'?`${name} ${n}`:name,short:j.type==='video'||j.type==='teardown'?name:'Working',n:j.type==='video'||j.type==='teardown'?n:'',text,frac:j.state==='queued'?0:jobFrac(j),since:jobStart(j),go};   // the whole job's time, not the step's
 }

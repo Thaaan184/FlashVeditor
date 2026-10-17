@@ -95,6 +95,112 @@ def process_teardown(args_dict, root_dir):
     print(f"[WORKER] Teardown for {clean_handle} completed successfully!", flush=True)
 
 
+def process_video(args, root_dir):
+    source = args.get("source") or args.get("path")
+    edit_dir = args.get("edit")
+    name = Path(edit_dir).name if edit_dir else args.get("name")
+
+    if not source or not edit_dir:
+        return
+
+    edit_path = Path(edit_dir)
+    edit_path.mkdir(parents=True, exist_ok=True)
+
+    cut_scripts = ROOT / "plugins" / "ai-editor" / "skills" / "cut" / "scripts"
+    py = sys.executable
+
+    print(f"[WORKER] Starting video cut pipeline for {name} (source: {source})...", flush=True)
+
+    # 1. Transcribe
+    update_status("video", step="Writing down every word", progress=0.25, key=name)
+    words_raw = edit_path / "words.raw.json"
+    run_cmd([py, str(cut_scripts / "transcribe.py"), str(source), str(words_raw), "--engine", "whisper"], cwd=root_dir)
+
+    # 2. Propose cuts & retakes
+    update_status("video", step="Finding retakes and pauses", progress=0.50, key=name)
+    run_cmd([py, str(cut_scripts / "retakes.py"), "propose", str(edit_path)], cwd=root_dir)
+
+    # Build spans.json from candidates.md
+    spans_file = edit_path / "spans.json"
+    if not spans_file.exists():
+        cands_file = edit_path / "candidates.md"
+        spans = []
+        if cands_file.exists():
+            text = cands_file.read_text(encoding="utf-8")
+            for m in re.finditer(r'`(false_start|retake)`\s+"([^"]+)"', text):
+                kind, cut_text = m.group(1), m.group(2)
+                spans.append({"text": cut_text, "kind": kind, "occurrence": 1})
+        spans_file.write_text(json.dumps(spans, indent=2), encoding="utf-8")
+
+    # 3. Build timeline
+    update_status("video", step="Cutting out the mistakes", progress=0.75, key=name)
+    run_cmd([py, str(cut_scripts / "build_timeline.py"), str(source), str(edit_path)], cwd=root_dir)
+
+    # 4. Render cut
+    update_status("video", step="Rendering the cut", progress=0.90, key=name)
+    run_cmd([py, str(cut_scripts / "render.py"), str(source), str(edit_path)], cwd=root_dir)
+
+    # 5. Preview & review round
+    run_cmd([py, str(cut_scripts / "preview_cut.py"), str(edit_path), "--no-open"], cwd=root_dir)
+    rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
+    run_cmd([py, str(rev_script), str(edit_path), "start", "--video", str(edit_path / "cut.mp4"), "--stage", "cut", "--transcript", str(edit_path / "words.json")], cwd=root_dir)
+
+    # 6. Complete video cut pass
+    update_status("video", done=True, key=name)
+    print(f"[WORKER] Video cut pipeline for {name} completed successfully!", flush=True)
+
+
+def process_style_edit(edit_folder, root_dir):
+    py = sys.executable
+    style_sk = ROOT / "plugins" / "ai-editor" / "skills" / "style-edit" / "scripts"
+    name = edit_folder.name
+    print(f"[WORKER] Starting style render pipeline for {name}...", flush=True)
+
+    words_file = edit_folder / "words.json"
+    captions_file = edit_folder / "captions.json"
+    if words_file.exists() and not captions_file.exists():
+        words = json.loads(words_file.read_text(encoding="utf-8"))
+        captions_file.write_text(json.dumps(words, indent=2), encoding="utf-8")
+
+    style_file = edit_folder / "style.json"
+    if not style_file.exists():
+        return
+
+    # Plan
+    run_cmd([py, str(style_sk / "plan.py"), str(style_file), str(captions_file)], cwd=str(edit_folder))
+
+    # Render
+    run_cmd([py, str(style_sk / "edit.py"), "render", str(edit_folder)], cwd=root_dir)
+
+    # Update review round 2
+    render_mp4 = edit_folder / "render.mp4"
+    if render_mp4.exists():
+        rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
+        run_cmd([py, str(rev_script), str(edit_folder), "start", "--video", str(render_mp4), "--stage", "edit", "--transcript", str(words_file)], cwd=root_dir)
+        print(f"[WORKER] Style render for {name} completed successfully!", flush=True)
+
+
+def check_approved_cuts(root_dir):
+    lib_edits = Path(root_dir) / "edits"
+    if not lib_edits.exists():
+        return
+    for edit_folder in lib_edits.iterdir():
+        if not edit_folder.is_dir():
+            continue
+        rj = edit_folder / "review.json"
+        if not rj.exists():
+            continue
+        try:
+            rdata = json.loads(rj.read_text(encoding="utf-8"))
+            events = rdata.get("events", [])
+            has_approve = any(e.get("type") == "approve" and e.get("stage") == "cut" for e in events)
+            has_edit_render = (edit_folder / "render.mp4").exists()
+            if has_approve and not has_edit_render:
+                process_style_edit(edit_folder, root_dir)
+        except Exception:
+            pass
+
+
 def parse_job_line(line):
     parts = shlex.split(line)
     if len(parts) < 2 or parts[0] != "JOB":
@@ -132,10 +238,14 @@ def run_loop():
                     root_dir = args.get("root", "/library")
                     if jtype == "teardown":
                         process_teardown(args, root_dir)
+                    elif jtype == "video":
+                        process_video(args, root_dir)
                     elif jtype == "setup":
                         setup_py = ROOT / "plugins" / "ai-editor" / "skills" / "setup" / "scripts" / "setup.py"
                         run_cmd([py, str(setup_py), "install-all"], cwd=root_dir)
                         update_status("setup", done=True)
+
+            check_approved_cuts("/library")
         except Exception as e:
             print(f"[WORKER ERROR] Loop exception: {e}", flush=True)
             time.sleep(2)

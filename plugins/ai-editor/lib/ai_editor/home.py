@@ -1931,6 +1931,10 @@ def cmd_status(a):
 
 
 # ---------------------------------------------------------------- server
+_REVIEW_SERVERS: dict = {}
+_LATEST_REVIEW: dict = {}
+
+
 def make_handler(token):
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):   # never log a request: a key travels in one
@@ -1944,6 +1948,89 @@ def make_handler(token):
 
         def cookie_name(self):
             return f"ave-home-{self.server.server_address[1]}"
+
+        def get_review_target(self):
+            cookie_str = self.headers.get("Cookie", "")
+            port = None
+            tok = None
+            if "ave_review_port=" in cookie_str:
+                for c in cookie_str.split(";"):
+                    c = c.strip()
+                    if c.startswith("ave_review_port="):
+                        try:
+                            port = int(c.split("=", 1)[1])
+                        except ValueError:
+                            pass
+                    elif c.startswith("ave_review_token="):
+                        tok = c.split("=", 1)[1]
+            if not port and _LATEST_REVIEW.get("port"):
+                port = _LATEST_REVIEW.get("port")
+                tok = _LATEST_REVIEW.get("token")
+            return port, tok
+
+        def forward_to_review(self, port, token, path_and_query, body=None, is_page=False):
+            import http.client
+            import shutil
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
+            hdrs = {}
+            for k, v in self.headers.items():
+                if k.lower() not in ("host", "content-length", "connection"):
+                    hdrs[k] = v
+            hdrs["Host"] = self.headers.get("Host", "127.0.0.1")
+            hdrs["X-Forwarded-Proto"] = self.headers.get("X-Forwarded-Proto", "http")
+
+            cookies = hdrs.get("Cookie", "")
+            token_cookie = f"ave-review-{port}={token}"
+            if token_cookie not in cookies:
+                hdrs["Cookie"] = (cookies + "; " if cookies else "") + token_cookie
+
+            if "?" in path_and_query:
+                target_path = path_and_query + f"&t={token}"
+            else:
+                target_path = path_and_query + f"?t={token}"
+
+            try:
+                conn.request(self.command, target_path, body=body, headers=hdrs)
+                resp = conn.getresponse()
+                path_only = urlsplit(path_and_query).path
+
+                if path_only in ("/video", "/cut.mp4"):
+                    self.send_response(resp.status, resp.reason)
+                    for hk, hv in resp.getheaders():
+                        if hk.lower() not in ("transfer-encoding", "connection"):
+                            self.send_header(hk, hv)
+                    self.end_headers()
+                    shutil.copyfileobj(resp, self.wfile, length=65536)
+                    return
+
+                raw_body = resp.read()
+                if path_only == "/state" and resp.status == 200:
+                    try:
+                        s_data = json.loads(raw_body.decode("utf-8"))
+                        s_data["home"] = "/"
+                        raw_body = json.dumps(s_data).encode("utf-8")
+                    except Exception:
+                        pass
+
+                self.send_response(resp.status, resp.reason)
+                for hk, hv in resp.getheaders():
+                    if hk.lower() in ("transfer-encoding", "connection"):
+                        continue
+                    if path_only == "/state" and hk.lower() == "content-length":
+                        self.send_header(hk, str(len(raw_body)))
+                        continue
+                    self.send_header(hk, hv)
+
+                if is_page:
+                    self.send_header("Set-Cookie", f"ave_review_port={port}; Path=/; SameSite=Lax")
+                    self.send_header("Set-Cookie", f"ave_review_token={token}; Path=/; SameSite=Lax")
+                    self.send_header("Set-Cookie", f"ave-review-{port}={token}; Path=/; SameSite=Lax")
+                self.end_headers()
+                self.wfile.write(raw_body)
+            except Exception as e:
+                self.send(502, {"error": f"Review proxy error: {str(e)}"})
+            finally:
+                conn.close()
 
         def authorized(self):
             host = (self.headers.get("Host") or "").split(":")[0]
@@ -1980,6 +2067,12 @@ def make_handler(token):
             if not self.authorized():
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
             path = unquote(urlsplit(self.path).path)
+            ref = self.headers.get("Referer", "")
+            is_review_route = path in ("/video", "/thumb", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
+            if is_review_route:
+                r_port, r_tok = self.get_review_target()
+                if r_port and r_tok:
+                    return self.forward_to_review(r_port, r_tok, self.path)
             if askhook.route(self, "GET", path, {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}):   # Claude's questions
                 return
             if path == "/":
@@ -2142,11 +2235,15 @@ def make_handler(token):
                 url = review_url(d)
                 if not url:
                     return self.send(500, {"error": "The editor did not open. Try again."})
-                self.send_response(302)
-                self.send_header("Location", url)
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-                return
+                m = re.search(r":(\d+)/\?t=([\w-]+)", url)
+                if not m:
+                    return self.send(500, {"error": "The editor did not return a valid port."})
+                r_port = int(m.group(1))
+                r_tok = m.group(2)
+                _REVIEW_SERVERS[d.name] = (r_port, r_tok)
+                _LATEST_REVIEW["port"] = r_port
+                _LATEST_REVIEW["token"] = r_tok
+                return self.forward_to_review(r_port, r_tok, f"/?t={r_tok}", is_page=True)
             m = re.match(r"^/td/([a-z0-9._-]+)/(.+)$", path)   # the teardown page and its own files
             if m:
                 base = (Path(read()["root"]) / "creator-teardowns" / m[1]).resolve()
@@ -2163,6 +2260,12 @@ def make_handler(token):
             if not askhook.same_origin(self):   # a POST from another site's page, even with the cookie
                 return self.send(403, {"error": "not from this page"})
             path = urlsplit(self.path).path
+            if path in ("/comment", "/approve", "/edits", "/send", "/back", "/learn", "/undo", "/keep", "/edit", "/trials", "/shutdown"):
+                r_port, r_tok = self.get_review_target()
+                if r_port and r_tok:
+                    clen = int(self.headers.get("Content-Length") or 0)
+                    body_bytes = self.rfile.read(clen) if clen > 0 else b"{}"
+                    return self.forward_to_review(r_port, r_tok, self.path, body=body_bytes)
             if path == "/script":
                 return self.script()
             if path in ("/upload", "/style/cover"):

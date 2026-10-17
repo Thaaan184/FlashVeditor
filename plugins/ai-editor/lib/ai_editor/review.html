@@ -660,7 +660,7 @@ const D=()=>v.duration||data().duration||1;
 let lastRaw='';
 document.getElementById('homebtn').onclick=()=>{
   if(S&&S.home){location.href=S.home+'#videos';return}   // the same tab: back to the editor's window at its fixed address
-  const m=document.getElementById('homemsg');m.textContent='The editor window is closed. Type nextwork-editor in Terminal to open it again.';m.hidden=false;setTimeout(()=>m.hidden=true,6000);
+  location.href='/#videos';
 };
 // the rail: the home window's views at its address; without one, the items that cannot work are hidden
 function renderRail(){
@@ -799,21 +799,21 @@ function render(){
   if(!S)return;
   document.body.classList.toggle('vertical',!!S.vertical);renderRail();
   const p=pending(),lastEv=S.events[S.events.length-1],picked=!!(S.sent&&lastEv&&lastEv.handled),vr=viewRound();
-  $('name').textContent=S.name;$('name').title=S.name;document.title=S.name+(p==='send'?' · Claude working':' · '+dn(S));steps();
+  $('name').textContent=S.name;$('name').title=S.name;document.title=S.name+(p==='send'?' · AI Editor working':' · '+dn(S));steps();
   const idleEdit=makingEdit()&&makeState().idle,busyNow=!idleEdit&&(picked&&(p==='send'||!!S.raw)||makingEdit()||approving);
   const nowAct=busyNow&&(S.activity||[]).filter(x=>x.round===S.round&&!x.done).pop();
-  const asking=!!document.documentElement.dataset.ask;   // ask.js: Claude's question box is open on this page
-  $('listen').innerHTML=asking?'<b>Claude is asking you something</b>':esc(approving?(S.stills?'Preview approved':'Cut approved'):idleEdit?'Claude is not working on the edit':listenText(S))+(!asking&&nowAct&&nowAct.text?` <span class="stp">· ${esc(nowAct.text)}</span>`:'');
+  const asking=!!document.documentElement.dataset.ask;   // ask.js: question box is open on this page
+  $('listen').innerHTML=asking?'<b>AI Editor is asking you something</b>':esc(approving?(S.stills?'Preview approved':'Cut approved'):idleEdit?'AI Editor is not working on the edit':listenText(S))+(!asking&&nowAct&&nowAct.text?` <span class="stp">· ${esc(nowAct.text)}</span>`:'');
   $('statusbox').classList.toggle('work',busyNow&&!asking);$('statusbox').querySelector('i').innerHTML=busyNow&&!asking?SPIN:'';
   $('mstage').textContent=STAGE[view.stage];$('msub').textContent=S.name+' · '+rn(view).toLowerCase();
   const mine=S.comments.filter(c=>c.stage===S.stage&&c.round===S.round).length,live=isCur()&&!p;
-  // Send is primary while there are notes; once a round lands with none, Approve is. Stop replaces Send while Claude works.
+  // Send is primary while there are notes; once a round lands with none, Approve is. Stop replaces Send while AI works.
   const sb=$('send'),ap=$('approve'),working=p==='send'||makingEdit();
   const undoAp=isCur()&&!S.raw&&lastEv&&lastEv.type==='approve';   // an approve can always be taken back
-  sb.classList.toggle('stop',working);sb.querySelector('span').textContent=undoAp?(makingEdit()?'Stop and undo approve':'Undo approve'):working?(S.raw?'Making the cut':'Stop'):mine?`Submit feedback to Claude (${mine})`:'Submit feedback to Claude';
-  sb.className=S.raw?'primary':(mine&&live&&!working?'primary':'')+(working?' stop':'');   // while Claude works nothing is primary: Stop stays quiet
+  sb.classList.toggle('stop',working);sb.querySelector('span').textContent=undoAp?(makingEdit()?'Stop and undo approve':'Undo approve'):working?(S.raw?'Making the cut':'Stop'):mine?`Submit feedback to AI (${mine})`:'Submit feedback to AI';
+  sb.className=S.raw?'primary':(mine&&live&&!working?'primary':'')+(working?' stop':'');   // while AI works nothing is primary: Stop stays quiet
   sb.disabled=undoAp?false:working?!isCur()||!!S.raw:(!live||!mine);
-  sb.title=undoAp?'Go back: this draft opens for notes again.':working?(S.raw?'the first cut is on its way':makingEdit()?'Stop making the edit. The cut opens again.':'Stop Claude working on this draft. Your notes open again.'):'';
+  sb.title=undoAp?'Go back: this draft opens for notes again.':working?(S.raw?'the first cut is on its way':makingEdit()?'Stop making the edit. The cut opens again.':'Stop AI working on this draft. Your notes open again.'):'';
   const mk=approving||makingEdit();
   ap.textContent=S.stage==='cut'?(S.final?'Approve the cut':'Approve the cut and add captions'):S.stills?'Approve and make the video':(S.alts||[]).length?'Approve all':'Approve the edit';
   ap.className=!working&&live&&!mine?'primary':'';ap.disabled=!!p||!isCur()||mine>0;
@@ -827,7 +827,7 @@ function render(){
   $('mapprove').className=ap.className;$('mapprove').disabled=ap.disabled;$('mapprove').title=ap.title;
   const sbar=isCur()&&S.round>0&&(S.rounds||[]).some(r=>r.stage==='cut');
   document.body.classList.toggle('staged',sbar);
-  $('stagetext').innerHTML=mk?(S.stills?'<b>The preview is approved.</b> Claude is making the video.':'<b>The cut is approved.</b> Claude is adding captions, zooms and sound.')
+  $('stagetext').innerHTML=mk?(S.stills?'<b>The preview is approved.</b> AI Editor is making the video.':'<b>The cut is approved.</b> AI Editor is adding captions, zooms and sound.')
     :S.stills&&S.stage==='edit'?'<b>This is the preview.</b> One frame for each card, with captions and zooms, over your sound. Leave notes, or approve it to make the video.'
     :fin?(S.stage==='edit'?'<b>Approved.</b> The edit is finished.':'<b>Approved.</b> The cut is the finished video.')
     :S.stage==='cut'?(S.final?'<b>This is the cut.</b> It is the finished video. Approve it when it is right.':'<b>This is the cut.</b> Captions, zooms and sound come next, once you approve it.'):'<b>This is the edit.</b> Captions, zooms and sound are in. Leave notes or approve.';
@@ -1007,7 +1007,7 @@ function renderMaking(){
   const on=!!S&&(approving||makingEdit()||landing===1||landing===3)&&isCur();
   document.body.classList.toggle('making',on);if(!on)return;
   const m=makeState(),ready=landing===1||landing===3,el=$('making');
-  if(m.idle&&!ready&&!approving){el.innerHTML=`<div class="mk"><div><b>Claude is not working on the edit</b><p>${esc(m.idle)} Your ${S.stills?'preview is':'cut is'} approved and saved.</p></div></div>`;return}
+  if(m.idle&&!ready&&!approving){el.innerHTML=`<div class="mk"><div><b>AI Editor is not working on the edit</b><p>${esc(m.idle)} Your ${S.stills?'preview is':'cut is'} approved and saved.</p></div></div>`;return}
   const pc=ready?100:Math.max(3,Math.round(m.frac*100)),since=m.at?dur((Date.now()-new Date(m.at))/1000):'0s';
   el.innerHTML=`<div class="mk${ready?' ready':''}"><div><b>${landing===3?'The preview is ready':ready?'The edit is ready':'Making the edit'}</b><p>Captions, zooms and sound${m.style?' in '+esc(m.style):''}</p></div>
     <em role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pc}"><i style="width:${pc}%"></i></em>
