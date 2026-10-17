@@ -995,7 +995,7 @@ function logo(id,px=20){
 }
 const KEYS=[
  {id:'elevenlabs',name:'ElevenLabs',tag:'exact words',text:'Keeps every "um" and false start, so the cut finds your retakes. The free transcriber tidies them away.',cost:'Has a free plan',url:'https://elevenlabs.io/app/settings/api-keys'},
- {id:'gemini',name:'Gemini',tag:"reads a creator's look",text:'Names the fonts, colours and graphics when it analyses a format. Without it, Claude looks at the frames. That uses more of your Claude usage.',cost:'Free, no card',url:'https://aistudio.google.com/apikey'}];
+ {id:'gemini',name:'Gemini',tag:"reads a creator's look",text:'Names fonts, colours and visual elements when analysing a format. Powered by 9Router Gateway (Gemini 3.8 Flash High).',cost:'Free, no card',url:'https://aistudio.google.com/apikey'}];
 const PARTS=[['captions','Captions'],['pace','Pace'],['graphics','Graphics'],['sound','Sound']];
 // creator-teardown quick mode, in order. Claude reports these step names (references/home.md).
 const PLAN=['Listed their videos','Downloaded the top 5 and 2 median','Transcribed every word','Measured cuts, zooms and camera moves','Reading captions and faces','Naming graphics','Sound effects and music','Writing the style'];
@@ -1432,7 +1432,7 @@ function vMyStyle(){
     :`<div class="ph"><h1>Styles</h1><p>How your videos get edited. Each one learns from your reviews.</p></div>`;
   return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px">${head}<div class="row hact" style="margin-top:${f?32:0}px">${newFoldBtn('styles')}<button class="b1" onclick="openCreate()">${ic('plus',16,2.2)}New style</button></div></div>
     <div class="stabs" role="tablist">${tabs}</div>
-    ${shown.length||tab==='all'||tab==='own'?gridRows([...shown.map(c=>crCard(c,idx(c))),...(!f&&(tab==='all'||tab==='own')?[newTile()]:[])],per):`<div class="none">${tab==='cr'?'No styles from creators yet. Paste 3 to 6 videos edited the same way, and Claude analyses them.':'Nothing here yet.'}</div><button class="b2" style="align-self:flex-start" onclick="${tab==='cr'?'openCreate()':`ui.stab='all';render()`}">${tab==='cr'?'Analyse a format':'See all styles'}</button>`}</div>`;
+    ${shown.length||tab==='all'||tab==='own'?gridRows([...shown.map(c=>crCard(c,idx(c))),...(!f&&(tab==='all'||tab==='own')?[newTile()]:[])],per):`<div class="none">${tab==='cr'?'No styles from creators yet. Paste 3 to 6 videos edited the same way, and FlashVeditor analyses them.':'Nothing here yet.'}</div><button class="b2" style="align-self:flex-start" onclick="${tab==='cr'?'openCreate()':`ui.stab='all';render()`}">${tab==='cr'?'Analyse a format':'See all styles'}</button>`}</div>`;
 }
 // Build it yourself: a new own style with a free name, then its page with the name field open
 async function buildYourself(){
@@ -1922,8 +1922,8 @@ function obView(){
 }
 const obStep=(n,on,t,s)=>`<div class="obs"><span class="obn ${on?'on':''}">${n}</span><div><b>${t}</b><p>${s}</p></div></div>`;
 function obWelcome(){
-  return `<div class="pgc obw"><div class="ph"><h1>Welcome to cooked.</h1><p>Three steps to your first edit. Claude does the work. You check it.</p></div>
-    <div class="obl">${obStep(1,1,'Set up','Installs the free tools on this computer. Then two optional keys.')}${obStep(2,0,'Analyse a format','Paste 3 to 6 videos edited the same way. Claude writes down how they are edited.')}${obStep(3,0,'Make your first video','Drop a clip. Claude cuts the mistakes, then adds captions, zooms and sound in that style.')}</div>
+  return `<div class="pgc obw"><div class="ph"><h1>Welcome to cooked.</h1><p>Three steps to your first edit. The AI does the work. You check it.</p></div>
+    <div class="obl">${obStep(1,1,'Set up','Installs the free tools on this computer. Then two optional keys.')}${obStep(2,0,'Analyse a format','Paste 3 to 6 videos edited the same way. FlashVeditor writes down how they are edited.')}${obStep(3,0,'Make your first video','Drop a clip. The AI cuts the mistakes, then adds captions, zooms and sound in that style.')}</div>
     <div class="row" style="gap:24px;flex-wrap:wrap"><button class="b1" onclick="queue({type:'setup'})">Start setup</button><span class="t2" style="color:var(--t2);font-size:14px">Setup keeps going in the background while you do step 2.</span></div>${sampleRow()}</div>`;
 }
 // one list of steps: done (green), now (a filled ring, its detail at the right), still to come
@@ -1943,7 +1943,7 @@ function obSetup(sj){
     <div class="obnext"><div><span class="cap">Next, while this runs</span><b>Analyse a format</b><p>Paste 3 to 6 videos edited the same way. Setup keeps going in the background.</p></div><button class="b1" onclick="obAnalyseNow()">Analyse a format</button></div>
     <div class="obnext"><div><span class="cap">Optional</span><b>Two free keys</b><p>They make your edits better. ElevenLabs hears every um and retake, so the cut is cleaner. Gemini reads fonts and colours via 9Router. Free, carrier-grade.</p></div><button class="b2" onclick="ui.ob='keys';render()">Add keys now</button></div></div>`;
 }
-const OBK=[{id:'gemini',tag:'reads the look',d:'Names the fonts and colours when it analyses a format.',skip:'Skip it and Claude looks at the frames itself. That uses more of your Claude usage. The key is free, no card.'},
+const OBK=[{id:'gemini',tag:'reads the look',d:'Names the fonts and colours when it analyses a format.',skip:'Powered by 9Router Gateway (Gemini 3.8 Flash High). Free, no card.'},
   {id:'elevenlabs',tag:'exact words',d:'Keeps every "um" and false start, so the cut finds your retakes.',skip:'Skip it and the free transcriber on this computer does it. It misses some retakes. ElevenLabs has a free plan.'}];
 function obKeys(){
   const sel=ui.obKey||((S.keys.gemini||{}).set?'elevenlabs':'gemini'),k=KEYS.find(x=>x.id===sel),st=S.keys[sel]||{},u=ui.keys[sel]||{};
@@ -1953,7 +1953,7 @@ function obKeys(){
       <div class="fld"><div class="in2"><input id="k-${sel}" type="${ui.show[sel]?'text':'password'}" autocomplete="off" spellcheck="false" placeholder="${ST_HINT[sel]||'Paste the key'}" aria-label="${k.name} key" onkeydown="if(event.key==='Enter')verify('${sel}')"></div><button class="b1" ${u.busy?'disabled':''} onclick="verify('${sel}')">${u.busy?'Checking':'Verify'}</button></div>
       ${u.bad?`<div class="msg bad">${CROSS}<span>${esc(u.msg)}</span></div>`:''}
       <p class="t2" style="white-space:normal;font-size:14px">Verify sends one free test request, then saves it on this computer. It never reaches the chat. <a href="${k.url}" target="_blank" rel="noopener">${sel==='elevenlabs'?'Open ElevenLabs':'Open Google AI Studio'}</a></p>`;
-  return `<div class="pgc"><div class="ph"><h1>Two free keys</h1><p>They make your edits better. ElevenLabs hears every um and retake, so the cut is cleaner. Gemini reads the fonts and colours when it analyses a format. Both are free and optional. Skip them and Claude does those jobs instead.</p></div>
+  return `<div class="pgc"><div class="ph"><h1>Two free keys</h1><p>They make your edits better. ElevenLabs hears every um and retake, so the cut is cleaner. Gemini reads the fonts and colours when it analyses a format. Both are free and optional. Skip them and default settings are used.</p></div>
     <div class="obk"><div style="display:flex;flex-direction:column;gap:20px;min-width:0;flex:1.25 1 0"><div class="obc"><div class="obch"><b>Keys</b><span class="st-lock">${ic('lock',14)}Saved on this computer only</span></div>${OBK.map(row).join('')}</div>
       <div class="row" style="gap:16px"><button class="b1" onclick="ui.ob=null;ui.obOn=true;render()">Next: analyse a format</button><button class="b2" onclick="obSkipKeys()">Skip for now</button></div><span class="t2">Add or change keys any time in Settings.</span></div>
       <div class="obwin"><div class="obwt"><i></i><i></i><i></i><span>${k.name} key</span></div><div class="obwb">${panel}</div></div></div></div>`;
@@ -1971,7 +1971,7 @@ function obAnalyse(){
       ${rows.map(obLinkRow).join('')}
       <label class="olin">${ic('plus',16,2)}<input id="lb-study" placeholder="${rows.length?'Paste another link':'Paste a video link'}" value="${esc(b.draft)}" oninput="lbInput('study',this.value)" onkeydown="lbKey(event,'study')" onpaste="lbPaste(event,'study')" autocomplete="off" spellcheck="false"><button class="ul" onclick="event.preventDefault();ui.create=true;ui.obPick=true;ui.study={pick:{}};render();setTimeout(()=>{const e=$('#pf-in');if(e)e.focus()},0)">Or paste a profile and pick its videos</button></label>
       ${st.msg?`<div class="msg bad">${CROSS}<span>${esc(st.msg)}</span></div>`:''}</div>
-    <div class="sec2"><b style="font-size:15px;padding-bottom:12px;border-bottom:1px solid var(--line)">What Claude writes down</b><div class="obwd">${wd.map(([i,t,s])=>`<div><div class="row" style="gap:10px">${ic(i)}<b>${t}</b></div><p>${s}</p></div>`).join('')}</div></div>
+    <div class="sec2"><b style="font-size:15px;padding-bottom:12px;border-bottom:1px solid var(--line)">What the AI writes down</b><div class="obwd">${wd.map(([i,t,s])=>`<div><div class="row" style="gap:10px">${ic(i)}<b>${t}</b></div><p>${s}</p></div>`).join('')}</div></div>
     <div class="row" style="gap:16px;flex-wrap:wrap"><button class="b1" ${rows.length&&!st.busy?'':'disabled'} onclick="ui.lastLinks=lbOf('study').rows.filter(r=>!isProfile(r));studyLink()">${st.busy?'Starting...':'Analyse this style'}</button><button class="b2" onclick="post('/later',{names:['style']}).then(()=>{ui.ob='drop';load()})">Skip, use the default style</button></div></div>`;
 }
 function obAnalysing(td){
@@ -1979,9 +1979,9 @@ function obAnalysing(td){
   const faces=hs.map(h=>((L.styles||[]).find(c=>c.id==='@'+h.toLowerCase())||{}).face).filter(Boolean);
   const s=td.steps.filter(x=>!x.done).at(-1),t=s?s.t:jobStart(td);
   return `<div class="pgc obw"><div class="row" style="gap:20px">${faces.length?`<span class="obav">${faces.slice(0,3).map(f=>avaHTML(f,48)).join('')}</span>`:''}<div class="ph"><h1>Analysing your format</h1><p>${n?`${n} video${n>1?'s':''}${hs.length>1?` from ${hs.length} creators`:''}. `:''}You can leave this page.</p></div></div>
-    <div class="obc"><div class="obnow"><div class="row" style="justify-content:space-between"><span class="cap">Now</span><b data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</b></div><div class="big">${esc(s?tdStep(td,s.text):td.state==='queued'?(S.listening?'Claude is picking this up':'Waiting for Claude'):'Starting')}</div><div class="trk" style="height:6px;border-radius:3px"><i style="width:${Math.round((jobFrac(td)||0)*100)}%;height:6px"></i></div>
+    <div class="obc"><div class="obnow"><div class="row" style="justify-content:space-between"><span class="cap">Now</span><b data-since="${t}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-t)))}</b></div><div class="big">${esc(s?tdStep(td,s.text):td.state==='queued'?connectHTML('Analysing'):'Starting')}</div><div class="trk" style="height:6px;border-radius:3px"><i style="width:${Math.round((jobFrac(td)||0)*100)}%;height:6px"></i></div>
       ${vs.length?`<div class="obth">${vs.map((v,i)=>`<span style="${v.thumbnail?`background-image:url('${esc(v.thumbnail)}')`:''}" class="${i<k?'got':i===k?'now':''}">${i<k?OKDOT:''}</span>`).join('')}</div>`:''}
-      ${td.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('',`Type ${CMD} in Terminal, or say "edit my video" in Claude Code.`)}</div>`:''}</div>
+      ${td.state==='queued'&&!S.listening?`<div class="t2" style="white-space:normal">${connectHTML('Analysing format')}</div>`:''}</div>
       <div class="obrs">${obRows(tdPlan(td),tdSteps(td))}</div></div>
     <div class="obnext"><div><span class="cap">Next</span><b>Make your first video</b><p>Drop a clip now if you like. It starts when the style is ready.</p></div><button class="b1" onclick="ui.ob='drop';render()">Drop a clip now</button></div>
     <button class="b2" style="align-self:flex-start" onclick="stopStudy(${J(td.args.handle)})">Stop analysing</button></div>`;
@@ -1996,14 +1996,14 @@ function obReady(td){
       <div class="row" style="gap:8px;margin-top:6px">${avaHTML(c.face,24)}<span class="t2" style="color:var(--t2);font-size:14px">${hs.length?'From '+hs.map(h=>'@'+esc(h)).join(' and '):esc(origin(c))} · analysed ${td.finished?ago(td.finished):'just now'}</span></div></div>
       <span class="row" style="gap:14px"><b class="oktx">Done. Ready to use</b><span class="pgdots">${sMenu(c)}</span></span></div>
       <div class="obf">${(rows.length?rows:fact3(c)).map(([i,l,v])=>`<div>${ic(i)}<span class="k">${esc(l)}</span><span>${esc(v)}</span></div>`).join('')}</div><div class="bar ok"></div></div>
-    <div class="obnext"><div><span class="cap">Next</span><b>Make your first video</b><p>Drop a talking-head clip. Claude edits it in ${esc(dname(c))}.</p></div><button class="b1" onclick="nv.style=${J(id)};nv.picked=1;ui.ob='drop';render()">Make a video with it</button></div></div>`;
+    <div class="obnext"><div><span class="cap">Next</span><b>Make your first video</b><p>Drop a talking-head clip. The AI edits it in ${esc(dname(c))}.</p></div><button class="b1" onclick="nv.style=${J(id)};nv.picked=1;ui.ob='drop';render()">Make a video with it</button></div></div>`;
 }
 // the first video goes through step 1 like any other (the clip picked, Add your script and Add images or links), then step 2
 function obPick(path){nv.sel=[path];if(!nv.picked){const td=S.jobs.filter(j=>j.type==='teardown'&&j.state==='done').pop();nv.style=td?'@'+td.args.handle:(L.default_style||'mine')}ui.ob=null;rgo('new')}
 async function obFiles(fs){ui.ob=null;rgo('new');await chooseFiles(fs)}
 function obDrop(){
   const rec=(R?R.videos:[]).slice(0,3);
-  return `<div class="pgc obw"><div class="ph"><h1>Make your first video</h1><p>Drop a talking-head clip. Claude cuts the mistakes first, then you check it.</p></div>
+  return `<div class="pgc obw"><div class="ph"><h1>Make your first video</h1><p>Drop a talking-head clip. The AI cuts the mistakes first, then you check it.</p></div>
     <label class="obdrop" id="droptile">${ic('up',28,1.8)}<b>Drop a video here</b><span class="t2" style="color:var(--t2);font-size:14px;white-space:normal;text-align:center">Any talking-head take from your phone or camera</span><button type="button" class="b1" onclick="event.preventDefault();this.nextElementSibling.click()">Choose a file</button><input type="file" multiple accept="video/*,.mov,.mkv,.mp4" class="hide" onchange="const f=[...this.files];this.value='';obFiles(f)"></label>
     ${nv.up.some(u=>!u.bad)?`<div class="row" style="gap:10px">${SPIN}<span>Adding your clip...</span></div>`:''}${sampleRow()}
     ${rec.length?`<div class="sec2"><b style="font-size:15px">Or pick a recent take</b><div class="hdrop" style="height:76px">${rec.map(v=>`<div class="hd-clip" role="button" tabindex="0" onclick="obPick(${J(v.path)})" onkeydown="if(event.key==='Enter')obPick(${J(v.path)})"><div class="th" style="background-image:url('${esc(v.thumb)}')"></div><div style="min-width:0"><div class="t1">${esc(v.name)}</div><div class="t2">${esc(whereAgo(v))}</div></div></div>`).join('')}${'<div aria-hidden="true"></div>'.repeat(3-rec.length)}</div></div>`:''}</div>`;
