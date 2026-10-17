@@ -97,10 +97,18 @@ def process_teardown(args_dict, root_dir):
 
 def process_video(args, root_dir):
     source = args.get("source") or args.get("path")
+    if not source and args.get("takes"):
+        t_file = Path(args["takes"])
+        if t_file.exists():
+            lines = [line.strip() for line in t_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+            if lines:
+                source = lines[0]
+
     edit_dir = args.get("edit")
     name = Path(edit_dir).name if edit_dir else args.get("name")
 
     if not source or not edit_dir:
+        print(f"[WORKER ERROR] Missing source or edit_dir in args: {args}", flush=True)
         return
 
     edit_path = Path(edit_dir)
@@ -134,7 +142,12 @@ def process_video(args, root_dir):
 
     # 3. Build timeline
     update_status("video", step="Cutting out the mistakes", progress=0.75, key=name)
-    run_cmd([py, str(cut_scripts / "build_timeline.py"), str(source), str(edit_path)], cwd=root_dir)
+    res_tl = run_cmd([py, str(cut_scripts / "build_timeline.py"), str(source), str(edit_path)], cwd=root_dir)
+    if res_tl.returncode != 0:
+        # Fallback with empty spans so pause cut proceeds cleanly
+        print("[WORKER WARN] build_timeline failed with candidate spans, falling back to empty spans...", flush=True)
+        spans_file.write_text("[]", encoding="utf-8")
+        run_cmd([py, str(cut_scripts / "build_timeline.py"), str(source), str(edit_path)], cwd=root_dir)
 
     # 4. Render cut
     update_status("video", step="Rendering the cut", progress=0.90, key=name)
@@ -143,7 +156,9 @@ def process_video(args, root_dir):
     # 5. Preview & review round
     run_cmd([py, str(cut_scripts / "preview_cut.py"), str(edit_path), "--no-open"], cwd=root_dir)
     rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
-    run_cmd([py, str(rev_script), str(edit_path), "start", "--video", str(edit_path / "cut.mp4"), "--stage", "cut", "--transcript", str(edit_path / "words.json")], cwd=root_dir)
+    words_json = edit_path / "words.json"
+    transcript_arg = str(words_json) if words_json.exists() else str(words_raw)
+    run_cmd([py, str(rev_script), str(edit_path), "start", "--video", str(edit_path / "cut.mp4"), "--stage", "cut", "--transcript", transcript_arg], cwd=root_dir)
 
     # 6. Complete video cut pass
     update_status("video", done=True, key=name)
@@ -207,6 +222,7 @@ def parse_job_line(line):
         return None, {}
     jtype = parts[1]
     args = {}
+    pos = []
     for p in parts[2:]:
         if p.startswith("@"):
             args["handle"] = p[1:]
@@ -214,8 +230,37 @@ def parse_job_line(line):
             k, v = p.split("=", 1)
             args[k] = v
         else:
-            args[p] = True
+            pos.append(p)
+    if jtype == "video" and pos and "path" not in args:
+        args["path"] = pos[0]
     return jtype, args
+
+
+def check_orphaned_jobs(root_dir="/library"):
+    try:
+        st = home.read()
+        jobs = st.get("jobs", [])
+        for j in jobs:
+            jtype = j.get("type")
+            jstate = j.get("state")
+            args = j.get("args", {})
+            if jstate == "taken" and jtype == "video":
+                edit_dir = args.get("edit")
+                if edit_dir:
+                    cut_file = Path(edit_dir) / "cut.mp4"
+                    if not cut_file.exists():
+                        print(f"[WORKER] Recovering orphaned taken job {j.get('id')} ({edit_dir})...", flush=True)
+                        process_video(args, root_dir)
+            elif jstate == "taken" and jtype == "teardown":
+                handle = args.get("handle")
+                if handle:
+                    clean = handle.lstrip("@")
+                    st_file = Path(root_dir) / "creator-teardowns" / clean / "style.json"
+                    if not st_file.exists():
+                        print(f"[WORKER] Recovering orphaned taken teardown job {j.get('id')} ({handle})...", flush=True)
+                        process_teardown(args, root_dir)
+    except Exception as e:
+        print(f"[WORKER ERROR] check_orphaned_jobs: {e}", flush=True)
 
 
 def run_loop():
@@ -225,10 +270,13 @@ def run_loop():
 
     while True:
         try:
-            res = subprocess.run([py, str(home_py), "wait"], capture_output=True, text=True)
+            check_orphaned_jobs("/library")
+            check_approved_cuts("/library")
+
+            res = subprocess.run([py, str(home_py), "wait"], capture_output=True, text=True, timeout=5)
             out = res.stdout.strip()
             if not out or out == "ALREADY":
-                time.sleep(2)
+                time.sleep(1)
                 continue
 
             for line in out.splitlines():
@@ -244,8 +292,9 @@ def run_loop():
                         setup_py = ROOT / "plugins" / "ai-editor" / "skills" / "setup" / "scripts" / "setup.py"
                         run_cmd([py, str(setup_py), "install-all"], cwd=root_dir)
                         update_status("setup", done=True)
-
-            check_approved_cuts("/library")
+        except subprocess.TimeoutExpired:
+            # Expected when no new jobs queued; allows loop to run periodic checks
+            pass
         except Exception as e:
             print(f"[WORKER ERROR] Loop exception: {e}", flush=True)
             time.sleep(2)
