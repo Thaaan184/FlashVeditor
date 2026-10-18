@@ -585,6 +585,9 @@ def check_orphaned_jobs(root_dir="/library"):
                     if not st_file.exists():
                         print(f"[WORKER] Recovering orphaned taken teardown job {j.get('id')} ({handle})...", flush=True)
                         process_teardown(args, root_dir)
+                    else:
+                        print(f"[WORKER] Auto-completing teardown job {j.get('id')} ({handle}) since style.json exists...", flush=True)
+                        update_status("teardown", step="Writing the style", progress=1.0, done=True, key=clean)
     except Exception as e:
         print(f"[WORKER ERROR] check_orphaned_jobs: {e}", flush=True)
 

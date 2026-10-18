@@ -808,12 +808,13 @@ def letterbox_band(dark, W):
 
 def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE_FPS):
     w0, h0, src_fps, dur = probe(path)
+    sample_dur = min(dur, 60.0)
     W = min(WORK_W, w0) // 2 * 2
     H = round(W * h0 / w0 / 2) * 2
     em_k = EM_PER_BOX.get(engine, 1.0)
     samples, thumbs = [], []
     dark = np.zeros(H)
-    for i, f in enumerate(decode(path, W, H, fps)):
+    for i, f in enumerate(decode(path, W, H, fps, dur=sample_dur)):
         dark += (f.max(axis=2) < 28).mean(axis=1)
         t = round(i / fps, 3)
         lines = [{"text": tx, "box": [round(v, 4) for v in b]} for tx, b in (ocr(f, t) if ocr else [])]
