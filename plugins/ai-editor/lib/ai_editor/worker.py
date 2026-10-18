@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FlashVeditor Auto-Worker Daemon.
+"""MEMASAK Auto-Worker Daemon.
 Listens for queued jobs from home.py and automatically executes the pipeline
 using the 9Router Gateway without requiring manual Claude terminal interaction.
 """
@@ -636,7 +636,7 @@ def check_orphaned_jobs(root_dir="/library"):
 
 
 def run_loop():
-    print("[WORKER] FlashVeditor Auto-Worker running. Waiting for jobs...", flush=True)
+    print("[WORKER] MEMASAK Auto-Worker running. Waiting for jobs...", flush=True)
     home_py = LIB / "home.py"
     py = sys.executable
 

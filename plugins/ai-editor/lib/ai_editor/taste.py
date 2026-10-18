@@ -103,7 +103,7 @@ def load_md():
 def save_md(md):
     HOME.mkdir(parents=True, exist_ok=True)
     lines = ["# My editing taste", "",
-             "Rules I've given FlashVeditor. It reads this before every edit.", ""]
+             "Rules I've given MEMASAK. It reads this before every edit.", ""]
     for s, rules in md.items():
         lines += [f"## {s}", ""] + [f"- {r}" for r in rules] + [""]
     md_path().write_text("\n".join(lines), encoding="utf-8")
@@ -455,7 +455,7 @@ def issue(yes=False):
     r = rows[-1]
     title = f"Suggestion: {r['rule'][:80]}"
     body = (f"**What was wrong:** {r['what']}\n\n**The general rule:** {r['rule']}\n\n**Owner:** {r['owner']}\n\n"
-            + (f"**Example:** {r['example']}\n\n" if r["example"] else "") + "Sent from the taste skill in FlashVeditor.")
+            + (f"**Example:** {r['example']}\n\n" if r["example"] else "") + "Sent from the taste skill in MEMASAK.")
     if not yes:
         return f"{title}\n\n{body}"
     if not shutil.which("gh") or subprocess.run(["gh", "auth", "status"], capture_output=True).returncode:

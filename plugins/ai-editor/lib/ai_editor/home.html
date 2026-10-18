@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FlashVeditor</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23121211'/%3E%3Cpath d='M36 8L16 34H32L26 56L48 28H32L36 8Z' fill='%23F2F0EA'/%3E%3C/svg%3E">
+<title>MEMASAK</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23121211'/%3E%3Cpath d='M10 36H46C46 47 38 52 28 52C18 52 10 47 10 36Z' fill='%23F2F0EA'/%3E%3Cpath d='M44 37H56A3 3 0 0 1 56 43H44Z' fill='%23F2F0EA'/%3E%3Cpath d='M22 14C22 14 26 20 22 26M32 10C32 10 37 18 32 26M41 15C41 15 45 20 41 26' fill='none' stroke='%23F2F0EA' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#FAFAF9;--panel:#FFFFFF;--ink:#0C0A09;--t2:#57534E;--t3:#78716C;--t4:#A8A29E;--line:#E7E5E4;--soft:#F5F5F4;--ring:#D6D3D1;
   --onink:#FFFFFF;--ok:#16A34A;--page:#FFFFFF;--side:#F7F7F6;--card:#F2F1EF;--menu:#FFFFFF;--track:#E7E5E4;--act:#E9E8E6;--ract:#E2E1DE;--tile:#F6F5F3;--onok:#FFFFFF;--oktext:#15803D;--dotbg:#FFFFFFF0;--dotfg:#0C0A09;--skbg:#FFFFFF;--segon:#FFFFFF;--inbg:#FFFFFF;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:light}
@@ -959,7 +959,7 @@ body:has(.smprow) .sb-smp{display:none}   /* the page offers the sample itself: 
 </head>
 <body>
 <div class="app">
-<aside id="side" class="sbar"><div class="sb-brand"><button class="brand" data-home onclick="goHome()" title="Home"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="currentColor" fill-opacity="0.15"/><path d="M36 8L16 34H32L26 56L48 28H32L36 8Z" fill="currentColor"/></svg></span><b>FlashVeditor</b></button></div></aside>
+<aside id="side" class="sbar"><div class="sb-brand"><button class="brand" data-home onclick="goHome()" title="Home"><span class="mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="currentColor" fill-opacity="0.15"/><path d="M10 36H46C46 47 38 52 28 52C18 52 10 47 10 36Z" fill="currentColor"/><path d="M44 37H56A3 3 0 0 1 56 43H44Z" fill="currentColor"/><path d="M22 14C22 14 26 20 22 26M32 10C32 10 37 18 32 26M41 15C41 15 45 20 41 26" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/></svg></span><b>MEMASAK</b></button></div></aside>
 <div class="wrap">
 <header>
   <nav class="steps" id="steps"></nav>
@@ -1442,7 +1442,7 @@ function vMyStyle(){
     :`<div class="ph"><h1>Styles</h1><p>How your videos get edited. Each one learns from your reviews.</p></div>`;
   return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px">${head}<div class="row hact" style="margin-top:${f?32:0}px">${newFoldBtn('styles')}<button class="b1" onclick="openCreate()">${ic('plus',16,2.2)}New style</button></div></div>
     <div class="stabs" role="tablist">${tabs}</div>
-    ${shown.length||tab==='all'||tab==='own'?gridRows([...shown.map(c=>crCard(c,idx(c))),...(!f&&(tab==='all'||tab==='own')?[newTile()]:[])],per):`<div class="none">${tab==='cr'?'No styles from creators yet. Paste 3 to 6 videos edited the same way, and FlashVeditor analyses them.':'Nothing here yet.'}</div><button class="b2" style="align-self:flex-start" onclick="${tab==='cr'?'openCreate()':`ui.stab='all';render()`}">${tab==='cr'?'Analyse a format':'See all styles'}</button>`}</div>`;
+    ${shown.length||tab==='all'||tab==='own'?gridRows([...shown.map(c=>crCard(c,idx(c))),...(!f&&(tab==='all'||tab==='own')?[newTile()]:[])],per):`<div class="none">${tab==='cr'?'No styles from creators yet. Paste 3 to 6 videos edited the same way, and MEMASAK analyses them.':'Nothing here yet.'}</div><button class="b2" style="align-self:flex-start" onclick="${tab==='cr'?'openCreate()':`ui.stab='all';render()`}">${tab==='cr'?'Analyse a format':'See all styles'}</button>`}</div>`;
 }
 // Build it yourself: a new own style with a free name, then its page with the name field open
 async function buildYourself(){
@@ -1932,8 +1932,8 @@ function obView(){
 }
 const obStep=(n,on,t,s)=>`<div class="obs"><span class="obn ${on?'on':''}">${n}</span><div><b>${t}</b><p>${s}</p></div></div>`;
 function obWelcome(){
-  return `<div class="pgc obw"><div class="ph"><h1>Welcome to FlashVeditor</h1><p>Three steps to your first edit. The AI does the work. You check it.</p></div>
-    <div class="obl">${obStep(1,1,'Set up','Installs the free tools on this computer. Then two optional keys.')}${obStep(2,0,'Analyse a format','Paste 3 to 6 videos edited the same way. FlashVeditor writes down how they are edited.')}${obStep(3,0,'Make your first video','Drop a clip. The AI cuts the mistakes, then adds captions, zooms and sound in that style.')}</div>
+  return `<div class="pgc obw"><div class="ph"><h1>Welcome to MEMASAK</h1><p>Three steps to your first edit. The AI does the work. You check it.</p></div>
+    <div class="obl">${obStep(1,1,'Set up','Installs the free tools on this computer. Then two optional keys.')}${obStep(2,0,'Analyse a format','Paste 3 to 6 videos edited the same way. MEMASAK writes down how they are edited.')}${obStep(3,0,'Make your first video','Drop a clip. The AI cuts the mistakes, then adds captions, zooms and sound in that style.')}</div>
     <div class="row" style="gap:24px;flex-wrap:wrap"><button class="b1" onclick="queue({type:'setup'})">Start setup</button><span class="t2" style="color:var(--t2);font-size:14px">Setup keeps going in the background while you do step 2.</span></div>${sampleRow()}</div>`;
 }
 // one list of steps: done (green), now (a filled ring, its detail at the right), still to come
@@ -2120,7 +2120,7 @@ IC.skill='<path d="M13 3 5 13.5h6l-1 7.5 8-10.5h-6z"/>';
 Object.assign(IC,IC2);
 const ic=(k,px=18,sw=1.8)=>`<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 const DOTS='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
-const PAN=px=>`<svg width="${px}" height="${px}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="currentColor" fill-opacity="0.15"/><path d="M36 8L16 34H32L26 56L48 28H32L36 8Z" fill="currentColor"/></svg>`;
+const PAN=px=>`<svg width="${px}" height="${px}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="currentColor" fill-opacity="0.15"/><path d="M10 36H46C46 47 38 52 28 52C18 52 10 47 10 36Z" fill="currentColor"/><path d="M44 37H56A3 3 0 0 1 56 43H44Z" fill="currentColor"/><path d="M22 14C22 14 26 20 22 26M32 10C32 10 37 18 32 26M41 15C41 15 45 20 41 26" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/></svg>`;
 const SPIN='<svg class="sring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/></svg>';
 const SIL='<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" fill="#F5F5F4"/><path d="M3.5 24c0-5 3.8-8.2 8.5-8.2s8.5 3.2 8.5 8.2z" fill="#F5F5F4"/></svg>';
 let railPref=false;try{railPref=localStorage.getItem('ave-rail')==='1'}catch(e){}
@@ -2183,7 +2183,7 @@ function sideHTML(){
   const vgo="ui.fold.videos=null;rgo('videos')";
   if(rail){
     const it=(k,label,on,js,extra='')=>`<button class="rl-it ${on?'on':''}" onclick="${js}" ${extra}><span class="ic">${ic(k,20,1.9)}</span>${label}</button>`;
-    return `<button class="rl-pan" data-home onclick="goHome()" title="Home" aria-label="FlashVeditor home">${PAN(24)}</button>${tog}
+    return `<button class="rl-pan" data-home onclick="goHome()" title="Home" aria-label="MEMASAK home">${PAN(24)}</button>${tog}
       <button class="rl-it rl-new" onclick="rgo('new')"><span class="ic">${ic('plus',20,2.2)}</span>New</button><div style="height:10px;flex-shrink:0"></div>
       ${it('home','Home',cur==='home','goHome()')}${it('videos','Videos',cur==='videos',vgo,dropAttrs('videos',null))}${it('styles','Styles',onS,"rgo('mystyle')")}${it('skill','Skills',cur==='skills',"rgo('skills')")}
       <div class="sb-sp"></div>
@@ -2198,7 +2198,7 @@ function sideHTML(){
     const on=k==='videos'?cur==='videos'&&ui.fold.videos===f.id:cur==='mystyle'&&ui.fold.styles===f.id;
     return `<div class="sb-row sfold ${on?'on':''}" role="button" tabindex="0" onclick="openFold(${J(f.id)},'${k}')" onkeydown="if(event.key==='Enter'&&event.target===this)this.click()" ${dropAttrs(k,f.id)}>${ic(icn)}<span class="lb">${esc(f.name)}</span>${moreBtn(K,'More for this folder')}<span class="n hv">${cnt(k,f.id)}</span>${cMenu(K,[['Rename',`ui.renfold={kind:'${k}',id:${J(f.id)},val:${J(f.name)}};render();setTimeout(()=>{const e=$('#fold-name');if(e){e.focus();e.select()}},0)`,'pencil'],['Delete folder',`foldDel('${k}',${J(f.id)})`,'trash']])}</div>`};
   const nf=ui.newfold&&ui.newfold.at!=='head'?`<div class="sb-row">${ic(ui.newfold.kind==='videos'?'folder':'styles')}${inp(ui.newfold,'Folder name')}</div>${ui.newfold.msg?`<div class="msg bad" style="padding:0 12px;font-size:12px">${esc(ui.newfold.msg)}</div>`:''}`:'';
-  return `<div class="sb-brand"><button class="brand" data-home onclick="goHome()" title="Home"><span class="mark" aria-hidden="true">${PAN(18)}</span><b>FlashVeditor</b></button>${tog}</div>
+  return `<div class="sb-brand"><button class="brand" data-home onclick="goHome()" title="Home"><span class="mark" aria-hidden="true">${PAN(18)}</span><b>MEMASAK</b></button>${tog}</div>
     <button class="sb-new" ${GS().setup?'':'disabled title="New video opens once setup is done"'} onclick="rgo('new')">${ic('plus',16,2.2)}New video</button>
     <nav class="sb-nav"><button class="sb-row ${cur==='home'?'on':''}" onclick="goHome()">${ic('home')}<span class="lb">Home</span></button>
       <button class="sb-row ${cur==='videos'&&!ui.fold.videos?'on':''}" onclick="${vgo}" ${dropAttrs('videos',null)}>${ic('videos')}<span class="lb">Your videos</span><span class="n">${vids.length}</span></button>
@@ -2344,10 +2344,10 @@ function stUpdate(){
 // the sidebar's Update: a new version is out (or one is installing, or just installed), one press, no Settings trip
 function updCard(){
   const u=S.update||{},j=latest('update'),busy=j&&j.state==='taken',done=j&&j.state==='done'&&Date.now()/1000-(j.finished||0)<300;
-  if(busy)return `<div class="sb-upd"><div><b>${SPIN}Updating FlashVeditor</b><span>${esc(((j.steps||[]).at(-1)||{}).text||'Starting')}</span></div></div>`;
+  if(busy)return `<div class="sb-upd"><div><b>${SPIN}Updating MEMASAK</b><span>${esc(((j.steps||[]).at(-1)||{}).text||'Starting')}</span></div></div>`;
   if(done)return `<div class="sb-upd"><div><b>Updated${(j.result||{}).version?' to '+esc(j.result.version):''}</b><span>Type /reload-plugins in Claude Code to load it.</span></div></div>`;
   if(!u.newer||u.fork)return '';
-  return `<div class="sb-upd"><div><b>New version ${esc(u.latest)}</b><span>${esc((u.notes||[])[0]||'A new version of FlashVeditor is out.')}</span></div><button class="sb-updb" onclick="stDoUpdate()">Update now</button></div>`;
+  return `<div class="sb-upd"><div><b>New version ${esc(u.latest)}</b><span>${esc((u.notes||[])[0]||'A new version of MEMASAK is out.')}</span></div><button class="sb-updb" onclick="stDoUpdate()">Update now</button></div>`;
 }
 async function stDoUpdate(){const r=await post('/job',{type:'update'});if(!r._ok)toast(r.error||'That did not start.');await load()}
 async function stCheckUpd(){await post('/update/check',{});await load();render();setTimeout(async()=>{await load();render()},2500)}
@@ -2598,7 +2598,7 @@ function render(){
   document.body.classList.toggle('rh',true);paintSide();
   if(!rv||rv==='making')rv=L.videos.length||firstRun()?'home':'new';
   rrender();
-  const ji=jobInfo(),tt=ji?`${ji.label} · FlashVeditor`:'FlashVeditor';if(document.title!==tt&&!document.documentElement.dataset.ask)document.title=tt;
+  const ji=jobInfo(),tt=ji?`${ji.label} · MEMASAK`:'MEMASAK';if(document.title!==tt&&!document.documentElement.dataset.ask)document.title=tt;
   if(keep){const e=document.getElementById(keep);if(e&&'value' in e&&!e.matches(':focus')){if(e.type!=='file')e.value=val;e.focus();try{e.setSelectionRange(pos,end??pos)}catch(x){}}}
 }
 setInterval(tickClocks,1000);
