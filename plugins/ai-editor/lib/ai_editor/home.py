@@ -2150,6 +2150,39 @@ def make_handler(token):
                     return self.forward_to_review(r_port, r_tok, self.path)
             if askhook.route(self, "GET", path, {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}):   # Claude's questions
                 return
+            if path in ("/cinematic.mp4", "/cinematic", "/watch"):
+                f = Path("/tmp/cinematic_output.mp4")
+                if not f.is_file():
+                    f = Path("/home/ids/cinematic_mio_mogok.mp4")
+                if not f.is_file():
+                    return self.send(404, {"error": "cinematic video not found"})
+                sz = f.stat().st_size
+                rng = self.headers.get("Range")
+                if rng and rng.startswith("bytes="):
+                    parts = rng[6:].split("-")
+                    start = int(parts[0]) if parts[0] else 0
+                    end = int(parts[1]) if len(parts) > 1 and parts[1] else sz - 1
+                    end = min(end, sz - 1)
+                    length = end - start + 1
+                    self.send_response(206)
+                    self.send_header("Content-Type", "video/mp4")
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{sz}")
+                    self.send_header("Content-Length", str(length))
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.end_headers()
+                    with open(f, "rb") as fh:
+                        fh.seek(start)
+                        shutil.copyfileobj(fh, self.wfile, length)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Content-Length", str(sz))
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Disposition", 'inline; filename="cinematic_mio_mogok.mp4"')
+                self.end_headers()
+                with open(f, "rb") as fh:
+                    shutil.copyfileobj(fh, self.wfile)
+                return
             if path == "/":
                 return self.send(200, themed(HTML.read_bytes()), "text/html; charset=utf-8", cookie=True)
             if path == "/state":
