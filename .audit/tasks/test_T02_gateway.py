@@ -58,6 +58,7 @@ class MockHandler(http.server.BaseHTTPRequestHandler):
 
 def test_mock_gateway():
     print("=== TEST 1: MOCK SERVER GATEWAY ROUTING ===")
+    orig_env = dict(os.environ)
     server = http.server.HTTPServer(("127.0.0.1", 0), MockHandler)
     port = server.server_address[1]
     th = threading.Thread(target=server.serve_forever, daemon=True)
@@ -97,6 +98,11 @@ def test_mock_gateway():
     print(f"[OK] Mock received Auth header: {req['headers'].get('Authorization') or req['headers'].get('authorization')}")
     print(f"[OK] Mock parsed look output: {parsed['closest_google_font']}, font_confidence={parsed['font_confidence']}")
     server.shutdown()
+    for k in ("GEMINI_BASE_URL", "GEMINI_API_VERSION", "GEMINI_AUTH_MODE", "GEMINI_MODEL", "GEMINI_FRAME_SAMPLING"):
+        if k in orig_env:
+            os.environ[k] = orig_env[k]
+        else:
+            os.environ.pop(k, None)
     print("MOCK TEST: PASSED")
 
 
