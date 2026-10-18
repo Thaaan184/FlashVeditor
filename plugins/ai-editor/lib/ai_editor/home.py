@@ -2055,7 +2055,7 @@ def make_handler(token):
                 resp = conn.getresponse()
                 path_only = urlsplit(path_and_query).path
 
-                if path_only in ("/video", "/cut.mp4"):
+                if path_only in ("/video", "/cut.mp4", "/download"):
                     self.send_response(resp.status, resp.reason)
                     for hk, hv in resp.getheaders():
                         if hk.lower() not in ("transfer-encoding", "connection"):
@@ -2143,7 +2143,7 @@ def make_handler(token):
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
             path = unquote(urlsplit(self.path).path)
             ref = self.headers.get("Referer", "")
-            is_review_route = path in ("/video", "/thumb", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
+            is_review_route = path in ("/download", "/video", "/thumb", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
             if is_review_route:
                 r_port, r_tok = self.get_review_target()
                 if r_port and r_tok:
