@@ -17,11 +17,12 @@ chmod 600 "$HOME/.config/creator-teardown/.env"
 if [ -n "$ANTHROPIC_API_KEY" ] || [ -n "$ANTHROPIC_AUTH_TOKEN" ]; then
   TOKEN="${ANTHROPIC_AUTH_TOKEN:-$ANTHROPIC_API_KEY}"
   BASE="${ANTHROPIC_BASE_URL:-http://host.docker.internal:20128}"
-  mkdir -p "$HOME/.claude"
+  mkdir -p "$HOME/.claude" /app/.claude
   cat << EOF > "$HOME/.claude/settings.local.json"
 {
   "env": {
     "ANTHROPIC_BASE_URL": "$BASE",
+    "ANTHROPIC_API_KEY": "$TOKEN",
     "ANTHROPIC_AUTH_TOKEN": "$TOKEN",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-ag/gemini-3.8-flash-high}",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "${ANTHROPIC_DEFAULT_SONNET_MODEL:-ag/claude-sonnet-4-6}",
@@ -29,6 +30,7 @@ if [ -n "$ANTHROPIC_API_KEY" ] || [ -n "$ANTHROPIC_AUTH_TOKEN" ]; then
   }
 }
 EOF
+  cp "$HOME/.claude/settings.local.json" /app/.claude/settings.local.json 2>/dev/null || true
 fi
 
 # Ensure library and data folders exist

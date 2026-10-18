@@ -344,7 +344,7 @@ def call_9router_for_edit(notes, words_data):
         if base_url.endswith("/v1") or base_url.endswith("/v1/"):
             url = base_url.rstrip("/") + "/chat/completions"
         else:
-            url = "http://100.96.207.8:20128/v1/chat/completions"
+            url = base_url.rstrip("/") + "/v1/chat/completions"
     else:
         url = base_url
 
