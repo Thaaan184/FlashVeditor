@@ -689,7 +689,8 @@ $('railtog').onclick=()=>{railx=!railx;document.body.classList.toggle('railx',ra
   $('railtog').title=$('railtog').ariaLabel=railx?'Collapse the sidebar':'Expand the sidebar'};
 let PV=null,followNew=false;   // followNew: Go back was pressed, so show the round it opens wherever the page was
 async function load(force){
-  const raw=await (await fetch('/state')).text();
+  const stateUrl = '/state' + (location.search || '');
+  const raw=await (await fetch(stateUrl)).text();
   if(raw===lastRaw&&!force)return;lastRaw=raw;
   const d=JSON.parse(raw),was=S&&key(cur());
   // the edit round arrived while the page showed "Making the preview": the bar fills green, then the page switches
@@ -700,7 +701,7 @@ async function load(force){
   if((d.theme==='light'||d.theme==='dark')&&document.documentElement.dataset.theme!==d.theme&&Date.now()-themeAt>3000){document.documentElement.dataset.theme=d.theme;themeIcon()}   // one theme with the window
   if(!view||followNew&&was!==key(cur())||(was&&was!==key(cur())&&key(view)===was)){if(view&&was&&was!==key(cur())&&v.currentTime>0)seekTo=mapT(v.currentTime,key(view),key(cur()));   // the new draft opens where you were, not at 0
     view=cur();followNew=false;if(was&&was!==key(cur()))tab='notes'}   // follow a new round when it lands
-  for(const r of S.rounds||[])if(!(key(r) in DATA)){DATA[key(r)]=null;fetch('/data?k='+key(r)).then(x=>x.json()).then(j=>{DATA[key(r)]=j;txSig='';render()}).catch(()=>{})}
+  for(const r of S.rounds||[])if(!(key(r) in DATA)){DATA[key(r)]=null;const dataUrl='/data?k='+key(r)+(location.search?'&'+location.search.slice(1):'');fetch(dataUrl).then(x=>x.json()).then(j=>{DATA[key(r)]=j;txSig='';render()}).catch(()=>{})}
   setVideo();render();
   if(landing===2){landing=0;toast(S.stills?'The preview is ready':'The edit is ready')}
 }

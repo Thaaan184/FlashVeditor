@@ -2136,14 +2136,18 @@ def make_handler(token):
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", cache)
             self.end_headers()
-            self.wfile.write(body)
+            if self.command != "HEAD":
+                self.wfile.write(body)
+
+        def do_HEAD(self):
+            return self.do_GET()
 
         def do_GET(self):
             if not self.authorized():
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
             path = unquote(urlsplit(self.path).path)
             ref = self.headers.get("Referer", "")
-            is_review_route = path in ("/download", "/video", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
+            is_review_route = path in ("/download", "/video", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and ("/review" in ref or "dir=" in self.path or "dir=" in ref))
             if is_review_route:
                 r_port, r_tok = self.get_review_target()
                 if r_port and r_tok:
