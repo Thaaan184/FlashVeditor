@@ -173,7 +173,7 @@ def process_style_edit(edit_folder, root_dir):
 
     words_file = edit_folder / "words.json"
     captions_file = edit_folder / "captions.json"
-    if words_file.exists() and not captions_file.exists():
+    if words_file.exists():
         words = json.loads(words_file.read_text(encoding="utf-8"))
         captions_file.write_text(json.dumps(words, indent=2), encoding="utf-8")
 
@@ -181,17 +181,64 @@ def process_style_edit(edit_folder, root_dir):
     if not style_file.exists():
         return
 
-    # Plan
-    run_cmd([py, str(style_sk / "plan.py"), str(style_file), str(captions_file)], cwd=str(edit_folder))
+    try:
+        s_data = json.loads(style_file.read_text(encoding="utf-8"))
+    except Exception:
+        s_data = {}
 
-    # Render
-    run_cmd([py, str(style_sk / "edit.py"), "render", str(edit_folder)], cwd=root_dir)
+    # User approved "add captions": ensure captions are enabled
+    if "captions" in s_data:
+        s_data["captions"]["present"] = True
+    else:
+        s_data["captions"] = {"present": True, "words_per_caption": 3, "size_pct": 5.0}
 
-    # Update review round 2
+    # Detect video aspect ratio
+    cut_file = edit_folder / "cut.mp4"
+    is_vertical = True
+    if cut_file.exists():
+        try:
+            r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", str(cut_file)], capture_output=True, text=True).stdout.strip().split(",")
+            if len(r) >= 2 and int(r[0]) > int(r[1]):
+                is_vertical = False
+        except Exception:
+            pass
+
+    plan_args = [py, str(style_sk / "plan.py"), str(style_file), str(captions_file)]
+    if is_vertical:
+        plan_args.extend(["--aspect", "9:16"])
+        if s_data.get("layout", {}).get("mode") == "board":
+            s_data["layout"]["mode"] = "overlay"
+            plan_args.extend(["--layout", "overlay"])
+    else:
+        plan_args.extend(["--aspect", "16:9"])
+
+    style_file.write_text(json.dumps(s_data, indent=1), encoding="utf-8")
+
+    # 1. Plan
+    print(f"[WORKER] Planning style edit with: {plan_args}", flush=True)
+    res_plan = run_cmd(plan_args, cwd=str(edit_folder))
+    if res_plan.returncode != 0:
+        print(f"[WORKER WARN] plan.py failed ({res_plan.stderr}), trying fallback --layout overlay...", flush=True)
+        plan_fallback = [py, str(style_sk / "plan.py"), str(style_file), str(captions_file), "--layout", "overlay", "--aspect", "9:16" if is_vertical else "16:9"]
+        run_cmd(plan_fallback, cwd=str(edit_folder))
+
+    # 2. Render
+    print(f"[WORKER] Rendering styled edit with Remotion for {name}...", flush=True)
+    res_render = run_cmd([py, str(style_sk / "edit.py"), "render", str(edit_folder)], cwd=root_dir)
+    if res_render.returncode != 0:
+        print(f"[WORKER ERROR] edit.py render failed: {res_render.stderr}", flush=True)
+
+    # 3. Advance review round to stage 'edit'
     render_mp4 = edit_folder / "render.mp4"
     if render_mp4.exists():
         rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
-        run_cmd([py, str(rev_script), str(edit_folder), "start", "--video", str(render_mp4), "--stage", "edit", "--transcript", str(words_file)], cwd=root_dir)
+        plan_file = edit_folder / "plan.json"
+        cmd_rev = [py, str(rev_script), str(edit_folder), "round", "--stage", "edit", "--video", str(render_mp4)]
+        if words_file.exists():
+            cmd_rev.extend(["--transcript", str(words_file)])
+        if plan_file.exists():
+            cmd_rev.extend(["--plan", str(plan_file)])
+        run_cmd(cmd_rev, cwd=root_dir)
         print(f"[WORKER] Style render for {name} completed successfully!", flush=True)
 
 
