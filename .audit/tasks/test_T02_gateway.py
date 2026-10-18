@@ -102,13 +102,22 @@ def test_mock_gateway():
 
 def test_real_9router_call():
     print("\n=== TEST 2: REAL 9ROUTER GATEWAY CALL ===")
-    conn = sqlite3.connect("/home/ids/.9router/db/data.sqlite")
-    key = conn.cursor().execute("SELECT key FROM apiKeys WHERE name='Default Key';").fetchone()[0]
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        db_path = Path("/home/ids/.9router/db/data.sqlite")
+        if db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            key = conn.cursor().execute("SELECT key FROM apiKeys WHERE name='Default Key';").fetchone()[0]
+            conn.close()
 
-    os.environ["GEMINI_BASE_URL"] = "http://localhost:20128"
-    os.environ["GEMINI_API_VERSION"] = "v1beta"
+    if not key:
+        print("[SKIP] No 9Router key available for real test")
+        return
+
+    os.environ["GEMINI_BASE_URL"] = os.environ.get("GEMINI_BASE_URL", "http://localhost:20128")
+    os.environ["GEMINI_API_VERSION"] = os.environ.get("GEMINI_API_VERSION", "v1beta")
     os.environ["GEMINI_AUTH_MODE"] = "bearer"
-    os.environ["GEMINI_MODEL"] = "ag/gemini-3.8-flash-high"
+    os.environ["GEMINI_MODEL"] = os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high")
     os.environ["GEMINI_FRAME_SAMPLING"] = "1"
 
     if "gemini" in sys.modules:
