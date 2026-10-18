@@ -36,12 +36,41 @@ def run_cmd(cmd, cwd=None):
     return res
 
 
-def update_status(job_type, step=None, progress=None, done=False, failed=None, key=None):
+def run_cmd_stream(cmd, cwd=None, on_line=None):
+    print(f"[WORKER] Executing: {' '.join(cmd)}", flush=True)
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd or str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    lines = []
+    if proc.stdout:
+        for line in iter(proc.stdout.readline, ""):
+            lines.append(line)
+            line_s = line.strip()
+            if on_line and line_s:
+                on_line(line_s)
+            if line_s:
+                print(f"[WORKER] {line_s[:120]}", flush=True)
+        proc.stdout.close()
+    proc.wait()
+    res = subprocess.CompletedProcess(cmd, proc.returncode, "".join(lines), "")
+    if res.returncode != 0:
+        print(f"[WORKER ERROR] returncode={res.returncode}", flush=True)
+    return res
+
+
+def update_status(job_type, step=None, progress=None, done=False, failed=None, key=None, detail=None):
     cmd = [sys.executable, str(LIB / "home.py"), "status", job_type]
     if key:
         cmd.extend(["--key", str(key)])
     if step:
         cmd.extend(["--step", str(step)])
+    if detail:
+        cmd.extend(["--detail", str(detail)])
     if progress is not None:
         cmd.extend(["--progress", str(progress)])
     if done:
@@ -64,40 +93,57 @@ def process_teardown(args_dict, root_dir):
     print(f"[WORKER] Starting teardown for {clean_handle} (root: {root_dir})...", flush=True)
 
     # 1. List videos
-    update_status("teardown", step="Listed their videos", progress=0.15, key=clean_handle)
+    update_status("teardown", step="Listed their videos", detail="Finding video links & metadata", progress=0.15, key=clean_handle)
     if urls_file:
-        res = run_cmd([py, str(td_scripts / "fetch.py"), "list", clean_handle, "--urls", str(urls_file)], cwd=root_dir)
+        res = run_cmd_stream([py, str(td_scripts / "fetch.py"), "list", clean_handle, "--urls", str(urls_file)], cwd=root_dir)
     else:
-        res = run_cmd([py, str(td_scripts / "fetch.py"), "list", clean_handle, "--platform", platform], cwd=root_dir)
+        res = run_cmd_stream([py, str(td_scripts / "fetch.py"), "list", clean_handle, "--platform", platform], cwd=root_dir)
     if res.returncode != 0:
-        update_status("teardown", failed=f"Fetch failed: {res.stderr[:200]}", key=clean_handle)
+        update_status("teardown", failed=f"Fetch failed: {res.stdout[-200:]}", key=clean_handle)
         return
 
     # 2. Download top videos
-    update_status("teardown", step="Downloaded the top 5 and 2 median", progress=0.35, key=clean_handle)
-    run_cmd([py, str(td_scripts / "visual.py"), "download", clean_handle, "--top", "5"], cwd=root_dir)
+    update_status("teardown", step="Downloaded the top 5 and 2 median", detail="Downloading sample videos...", progress=0.25, key=clean_handle)
+    def on_dl(l):
+        if "[download]" in l or "100%" in l or "Destination:" in l or "cached" in l:
+            update_status("teardown", step="Downloaded the top 5 and 2 median", detail=l[:40], progress=0.35, key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "visual.py"), "download", clean_handle, "--top", "5"], cwd=root_dir, on_line=on_dl)
 
     # 3. Transcribe
-    update_status("teardown", step="Transcribed every word", progress=0.50, key=clean_handle)
-    run_cmd([py, str(td_scripts / "fetch.py"), "transcribe", clean_handle, "--top", "5"], cwd=root_dir)
+    update_status("teardown", step="Transcribed every word", detail="Running speech-to-text...", progress=0.45, key=clean_handle)
+    def on_tr(l):
+        if "transcribing" in l.lower() or "cached" in l.lower() or "video" in l.lower():
+            update_status("teardown", step="Transcribed every word", detail=l[:40], progress=0.50, key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "fetch.py"), "transcribe", clean_handle, "--top", "5"], cwd=root_dir, on_line=on_tr)
 
     # 4. Measure cuts, zooms, camera moves
-    update_status("teardown", step="Measured cuts, zooms and camera moves", progress=0.65, key=clean_handle)
-    run_cmd([py, str(td_scripts / "visual.py"), "measure", clean_handle], cwd=root_dir)
+    update_status("teardown", step="Measured cuts, zooms and camera moves", detail="Detecting cuts and motion...", progress=0.60, key=clean_handle)
+    def on_vis(l):
+        if "measuring" in l.lower() or "cuts" in l.lower() or "video" in l.lower():
+            update_status("teardown", step="Measured cuts, zooms and camera moves", detail=l[:40], progress=0.65, key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "visual.py"), "measure", clean_handle], cwd=root_dir, on_line=on_vis)
 
     # 5. Look pass (OCR and visual framing)
-    update_status("teardown", step="Reading captions and faces", progress=0.75, key=clean_handle)
-    run_cmd([py, str(td_scripts / "look.py"), "measure", clean_handle], cwd=root_dir)
+    update_status("teardown", step="Reading captions and faces", detail="Scanning frames for text & faces...", progress=0.70, key=clean_handle)
+    def on_look(l):
+        if "[LOOK]" in l:
+            msg = l.split("[LOOK]", 1)[1].strip()
+            update_status("teardown", step="Reading captions and faces", detail=msg[:40], key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "look.py"), "measure", clean_handle], cwd=root_dir, on_line=on_look)
 
     # 6. Format check
-    run_cmd([py, str(td_scripts / "format_check.py"), "check", clean_handle], cwd=root_dir)
+    update_status("teardown", step="Naming graphics", detail="Checking format via 9Router...", progress=0.80, key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "format_check.py"), "check", clean_handle], cwd=root_dir)
 
     # 7. Gemini Look Pass via 9Router Gateway
-    update_status("teardown", step="Analysing format via 9Router (Gemini 3.8 Flash High)", progress=0.88, key=clean_handle)
-    run_cmd([py, str(td_scripts / "gemini.py"), "look", clean_handle], cwd=root_dir)
+    update_status("teardown", step="Naming graphics", detail="Analysing format via 9Router (Gemini)", progress=0.88, key=clean_handle)
+    run_cmd_stream([py, str(td_scripts / "gemini.py"), "look", clean_handle], cwd=root_dir)
 
-    # 8. Complete teardown
-    update_status("teardown", step="Writing the style", progress=1.0, key=clean_handle)
+    # 8. Sound effects and music
+    update_status("teardown", step="Sound effects and music", detail="Synthesizing style profile...", progress=0.95, key=clean_handle)
+
+    # 9. Complete teardown
+    update_status("teardown", step="Writing the style", detail="Done! Style saved", progress=1.0, key=clean_handle)
     update_status("teardown", done=True, key=clean_handle)
     print(f"[WORKER] Teardown for {clean_handle} completed successfully!", flush=True)
 
@@ -585,9 +631,6 @@ def check_orphaned_jobs(root_dir="/library"):
                     if not st_file.exists():
                         print(f"[WORKER] Recovering orphaned taken teardown job {j.get('id')} ({handle})...", flush=True)
                         process_teardown(args, root_dir)
-                    else:
-                        print(f"[WORKER] Auto-completing teardown job {j.get('id')} ({handle}) since style.json exists...", flush=True)
-                        update_status("teardown", step="Writing the style", progress=1.0, done=True, key=clean)
     except Exception as e:
         print(f"[WORKER ERROR] check_orphaned_jobs: {e}", flush=True)
 

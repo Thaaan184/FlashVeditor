@@ -38,6 +38,12 @@ def step(text, detail=None, progress=None, job="teardown", key=None, timeout=5):
         if not home_py.is_file():   # creator-teardown's copy: the path home.py writes into state.json
             home_py = Path(d.get("home_py") or "")
         if not home_py.is_file():
+            here = Path(__file__).resolve()
+            for cand in [here.with_name("home.py"), here.parents[4] / "ai-editor/lib/ai_editor/home.py", Path("/app/plugins/ai-editor/lib/ai_editor/home.py")]:
+                if cand.is_file():
+                    home_py = cand
+                    break
+        if not home_py.is_file():
             return False
         cmd = [sys.executable, home_py.as_posix(), "status", job, "--if-active", "--step", text] + \
             (["--detail", detail] if detail else []) + (["--progress", f"{progress:.3f}"] if progress is not None else []) + \

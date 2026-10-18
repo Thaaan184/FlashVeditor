@@ -35,6 +35,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -806,20 +807,30 @@ def letterbox_band(dark, W):
     return [round(100 * top / n, 1), round(100 * (bot - top) / n, 1)]
 
 
-def measure_video(path, words, ocr=None, faces=None, engine="vision", fps=SAMPLE_FPS):
+def measure_video(path, words, ocr=None, faces=None, engine=None, fps=SAMPLE_FPS, handle=None):
     w0, h0, src_fps, dur = probe(path)
-    sample_dur = min(dur, 60.0)
     W = min(WORK_W, w0) // 2 * 2
     H = round(W * h0 / w0 / 2) * 2
-    em_k = EM_PER_BOX.get(engine, 1.0)
+    em_k = EM_PER_BOX.get(engine or "vision", 1.0)
     samples, thumbs = [], []
     dark = np.zeros(H)
-    for i, f in enumerate(decode(path, W, H, fps, dur=sample_dur)):
+    total_est = max(1, int(dur * fps))
+    last_report_t = 0.0
+    for i, f in enumerate(decode(path, W, H, fps)):
         dark += (f.max(axis=2) < 28).mean(axis=1)
         t = round(i / fps, 3)
         lines = [{"text": tx, "box": [round(v, 4) for v in b]} for tx, b in (ocr(f, t) if ocr else [])]
         samples.append({"t": t, "lines": lines, "face": faces(f) if faces else None})
         thumbs.append(f[::max(1, H // 96), ::max(1, W // 54)].reshape(-1, 3))
+        now = time.time()
+        if now - last_report_t >= 2.0 or i == total_est - 1:
+            last_report_t = now
+            pct = int(min(100, round(100 * (i + 1) / total_est)))
+            prog_val = round((i + 1) / total_est, 3)
+            det = f"{path.stem}: {int(t)}s / {int(dur)}s ({pct}%)"
+            print(f"[LOOK] {det}", file=sys.stderr, flush=True)
+            if handle:
+                _progress.step("Reading captions and faces", detail=det, progress=prog_val, key=handle)
     n = len(samples)
     if not n:
         raise SystemExit(f"no frames decoded from {path}")
@@ -1197,10 +1208,11 @@ def write_summary(outdir):
 
 def measure_one(job):
     """One video's look.json (worker process: each builds its own OCR engine and face detector)."""
-    p, tdir, fps = job
+    p, tdir, fps = job[:3]
+    handle = job[3] if len(job) > 3 else (p.parents[1].name if len(p.parents) > 1 else None)
     engine, ocr = ocr_engine()
     print(f"{p.stem} measuring", file=sys.stderr)
-    r = measure_video(p, load_words(tdir, p.stem), ocr, face_detector(), engine, fps)
+    r = measure_video(p, load_words(tdir, p.stem), ocr, face_detector(), engine, fps, handle=handle)
     p.with_suffix(".look.json").write_text(json.dumps(r, default=float), encoding="utf-8")
     c = r["captions"]
     print(f"  {p.stem}: captions {c.get('present')} ({c['samples']} samples) y {c.get('y_pct')} "
@@ -1220,7 +1232,7 @@ def cmd_measure(a):
             print(f"{p.stem} cached", file=sys.stderr)
     from parallel import pmap
     _progress.step("Reading captions and faces", detail=f"{len(todo)} videos" if todo else None, progress=0, key=a.handle)
-    pmap(measure_one, [(p, outdir / "transcripts", a.fps) for p in todo],
+    pmap(measure_one, [(p, outdir / "transcripts", a.fps, a.handle) for p in todo],
          tick=_progress.ticker("Reading captions and faces", len(todo), key=a.handle))
     rows = [json.loads(p.with_suffix(".look.json").read_text(encoding="utf-8")) for p in vids]
     visuals = [json.loads(p.read_text(encoding="utf-8")) for p in sorted((outdir / "video").glob("*.visual.json"))]
