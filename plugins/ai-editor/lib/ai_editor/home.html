@@ -2063,11 +2063,11 @@ function vVideos(){
   if(ui.fold.videos&&!fd('videos').folders.some(f=>f.id===ui.fold.videos))ui.fold.videos=null;
   const fid=ui.fold.videos,all=L.videos,vids=fid?all.filter(v=>inFold('videos',v.dir)===fid):all,W=cw(),pl=n=>n===1?'':'s';   // Your videos is everything; a folder filters
   if(fid){const f=fd('videos').folders.find(x=>x.id===fid);
-    return `<div class="pgc"><div class="ph"><button class="back" onclick="ui.fold.videos=null;render()" ${dropAttrs('videos',null)}>${ic('back',14,2)}Your videos</button><h1>${esc(f.name)}</h1><p>${vids.length} video${pl(vids.length)}. Drag a video onto a folder to move it.</p></div>${editTrashRow()}
+    return `<div class="pgc"><div class="ph"><button class="back" onclick="ui.fold.videos=null;render()" ${dropAttrs('videos',null)}>${ic('back',14,2)}Your videos</button><h1>${esc(f.name)}</h1><p>${vids.length} video${pl(vids.length)}. Drag a video onto a folder to move it.</p></div>${editTrashRow()}${editRenameRow()}
       ${vids.length?cardRows(vids):'<div class="none">Nothing in this folder yet. Drag a video onto it in the sidebar. Or open a video\'s ⋯ menu and pick Move to folder.</div><button class="b2 s" style="align-self:flex-start" onclick="ui.fold.videos=null;render()">See all your videos</button>'}</div>`}
   const now=vids.filter(v=>vPh(v)!=='done'),done=vids.filter(v=>vPh(v)==='done'),lede=vSum(all);
   const fit=perRow();
-  return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div class="ph"><h1>Your videos</h1>${all.length?`<p>${lede}</p>`:''}</div><div class="row hact">${newFoldBtn('videos')}</div></div>${editTrashRow()}
+  return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div class="ph"><h1>Your videos</h1>${all.length?`<p>${lede}</p>`:''}</div><div class="row hact">${newFoldBtn('videos')}</div></div>${editTrashRow()}${editRenameRow()}
     ${now.length?`<div class="sec2"><div class="sh"><b>Now</b></div>${cardRows(now)}</div>`:''}
     ${done.length?`<div class="sec2"><div class="sh"><b>Done</b>${seeAll('done',done.length,fit)}</div><div class="dts">${(ui.exp.done?done:done.slice(0,fit)).map(tile).join('')}</div></div>`:''}
     ${all.length?'':`<div class="none">No videos yet. Pick a clip to make your first one.</div><button class="b1" style="align-self:flex-start" onclick="rgo('new')">New video</button>`}</div>`;
@@ -2077,6 +2077,29 @@ function editTrashRow(){
   return `<div class="confirm"><b>Remove ${esc(v.name)} from your videos?</b><div class="sub">Its folder in your library goes to the Trash: the cut, the finished videos and your notes. Your original clip stays.</div><div class="row"><button class="btn dark sm" onclick="trashEdit(${esc(JSON.stringify(v.dir))})">Move to Trash</button><button class="btn quiet sm" onclick="ui.edittrash=null;render()">Keep</button></div></div>`;
 }
 async function trashEdit(dir){const r=await post('/edit/trash',{dir});ui.edittrash=null;ui.editmsg=r.ok?null:(r.msg||'That did not work.');await loadLib();render()}
+function editRenameRow(){
+  const v=ui.renvideo&&L.videos.find(x=>x.dir===ui.renvideo.dir);if(!v)return '';
+  return `<div class="confirm" style="display:flex;flex-direction:column;gap:10px"><b>Rename video</b><div class="row" style="gap:8px;max-width:520px"><input id="ren-vid-in" class="in1" style="flex:1;height:36px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);background:var(--page);color:var(--ink)" value="${esc(ui.renvideo.name)}" placeholder="Video name" maxlength="80" onkeydown="if(event.key==='Enter')saveRenameVideo();if(event.key==='Escape'){ui.renvideo=null;render()}"><button class="b1 s" onclick="saveRenameVideo()">Save</button><button class="b2 s" onclick="ui.renvideo=null;render()">Cancel</button></div></div>`;
+}
+function askRenameVideo(dir,currentName){
+  ui.renvideo={dir,name:currentName};
+  if(rv!=='videos')rgo('videos');
+  else render();
+  setTimeout(()=>{const inp=$('#ren-vid-in');if(inp){inp.focus();inp.select()}},50);
+}
+async function saveRenameVideo(){
+  if(!ui.renvideo)return;
+  const inp=$('#ren-vid-in');
+  const name=inp?inp.value.trim():'';
+  if(!name){toast('Video name cannot be empty');return}
+  const dir=ui.renvideo.dir;
+  const r=await post('/video/rename',{dir,name});
+  ui.renvideo=null;
+  if(!r._ok||!r.ok){toast(r.error||'Failed to rename video');return}
+  toast('Renamed to '+name);
+  await loadLib();
+  render();
+}
 // ---------------------------------------------------------------- the app shell (Paper "P App: main")
 // A labelled sidebar (brand, New video, Home / Your videos / My styles, video folders, the live job, Settings,
 // theme), or the icon rail: collapsed by the toggle (remembered in this browser) or always under 1100 px wide.
@@ -2217,7 +2240,9 @@ function subMenu(kind,item,name){
   const nf=`newFolder(${J(item)},${J(name)},'${kind}')`;
   return `<button class="hasub ${ui.sub?'on':''}" onclick="ui.sub=!ui.sub;render()">${ic('folder',16)}<span class="lb">Move to folder</span>${ic('chev',14,2)}</button>${ui.sub?`<div class="cmenu sub">${kind==='styles'?'<div class="mh">Style folders</div>':''}${F.folders.map(f=>`<button onclick="ui.cmenu=null;moveTo('${kind}',${J(item)},${J(f.id)},${J(name)})">${ic(kind==='styles'?'styles':'folder',16)}<span class="lb">${esc(f.name)}</span>${f.id===cur?ic('check',14,2.4):`<span class="n">${n(f.id)}</span>`}</button>`).join('')}${F.folders.length?'<hr>':''}<button onclick="ui.cmenu=null;${nf}">${ic('plus',16)}<span class="lb">New folder</span></button>${cf?`<button onclick="ui.cmenu=null;moveTo('${kind}',${J(item)},null,${J(name)})">${ic('minus',16)}<span class="lb">Take out of ${esc(cf.name)}</span></button>`:''}</div>`:''}`;
 }
-const vMenu=v=>dotsBtn('v:'+v.dir,'More for this video')+cMenu('v:'+v.dir,[['Remove from this list',`hideEdit(${J(v.dir)})`,'minus'],ui.cmenu==='v:'+v.dir&&subMenu('videos',v.dir,v.name),
+const vMenu=v=>dotsBtn('v:'+v.dir,'More for this video')+cMenu('v:'+v.dir,[
+  ['Rename',`askRenameVideo(${J(v.dir)},${J(v.name)})`,'pencil'],
+  ['Remove from this list',`hideEdit(${J(v.dir)})`,'minus'],ui.cmenu==='v:'+v.dir&&subMenu('videos',v.dir,v.name),
   v.media&&['Download',`location.href=${J(v.media)}+(getAuthToken()?'&t='+encodeURIComponent(getAuthToken()):'')`,'down'],'hr',['Move to Trash',`askTrash(${J(v.dir)})`,'trash']]);
 // ---- folders (Your videos in the sidebar, My styles on its page): folders.json through /folder/*
 const fd=k=>(L&&L.folders||{})[k]||{folders:[],items:{}};

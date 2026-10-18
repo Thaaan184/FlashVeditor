@@ -2143,7 +2143,7 @@ def make_handler(token):
                 return self.send(403, {"error": "open the page with the URL home.py printed"})
             path = unquote(urlsplit(self.path).path)
             ref = self.headers.get("Referer", "")
-            is_review_route = path in ("/download", "/video", "/thumb", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
+            is_review_route = path in ("/download", "/video", "/data", "/stills", "/stills/file", "/cut-check.html", "/cut.mp4") or path.startswith(("/assets/", "/frames/")) or (path == "/state" and "/review" in ref)
             if is_review_route:
                 r_port, r_tok = self.get_review_target()
                 if r_port and r_tok:
@@ -2238,7 +2238,7 @@ def make_handler(token):
                 root, jobs = read()["root"], read()["jobs"]
                 raw = {str(Path(j["args"]["edit"]).resolve()): j for j in jobs if j["type"] == "video" and j["args"].get("edit")}
                 # no cut yet: the raw clip's frame (as New video shows it), and the job the card follows
-                vids = [dict(e, thumb=f"/thumb?p={quote(e['video'] or raw[e['dir']]['args']['path'])}&u={int(e['updated'])}"
+                vids = [dict(e, thumb=f"/thumb?p={quote(e['video'] or raw[e['dir']]['args']['path'])}&u={int(e['updated'])}&t={token}"
                              if e["video"] or e["dir"] in raw else None,
                              media=e["video"] and "/media?p=" + quote(e["video"]), job=(raw.get(e["dir"]) or {}).get("id"))
                         for e in library.entries() if e["dir"] not in set(read().get("hidden_edits") or [])]   # Remove from this list
@@ -2378,7 +2378,7 @@ def make_handler(token):
                 "/undo", "/keep", "/edit", "/trials", "/shutdown", "/assets", "/delete",
                 "/check", "/intro", "/scope", "/update", "/resolve", "/round", "/status"
             }
-            if path in REVIEW_POST_PATHS or ("/review" in self.headers.get("Referer", "") and path not in ("/script", "/upload", "/style/cover", "/job", "/gateway", "/theme")):
+            if path in REVIEW_POST_PATHS or ("/review" in self.headers.get("Referer", "") and path not in ("/script", "/upload", "/style/cover", "/job", "/gateway", "/theme", "/video/rename")):
                 r_port, r_tok = self.get_review_target()
                 if r_port and r_tok:
                     clen = int(self.headers.get("Content-Length") or 0)
@@ -2702,6 +2702,24 @@ def make_handler(token):
                     cj = update(lambda dd: queue(dd, "style-change", {"style": nid, "path": str(sp), "text": f"Combined from {froms}. {text}"}))
                     claude_unless_idle(cj["id"])
                 return self.send(200, {"ok": True, "id": nid})
+            if path == "/video/rename":
+                vdir_raw = str(body.get("dir") or "").strip()
+                new_name = " ".join(str(body.get("name") or "").split())
+                if not new_name:
+                    return self.send(400, {"ok": False, "error": "Name cannot be empty."})
+                vdir = Path(vdir_raw).resolve()
+                if not vdir.exists():
+                    return self.send(404, {"ok": False, "error": "Video folder not found."})
+                rj = vdir / "review.json"
+                if rj.is_file():
+                    try:
+                        rdata = json.loads(rj.read_text(encoding="utf-8"))
+                        rdata["name"] = new_name
+                        rdata["label"] = new_name
+                        rj.write_text(json.dumps(rdata, indent=2), encoding="utf-8")
+                    except Exception as e:
+                        return self.send(500, {"ok": False, "error": f"Failed to save review.json: {e}"})
+                return self.send(200, {"ok": True, "name": new_name})
             if path == "/style/skill":   # {id, skill}: a skill style runs another skill (its skill was deleted)
                 try:
                     sp, st, _ = style_of(read()["root"], str(body.get("id") or ""))

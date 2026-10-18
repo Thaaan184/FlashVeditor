@@ -809,7 +809,21 @@ function render(){
   if(!S)return;
   document.body.classList.toggle('vertical',!!S.vertical);renderRail();
   const p=pending(),lastEv=S.events[S.events.length-1],picked=!!(S.sent&&lastEv&&lastEv.handled),vr=viewRound();
-  $('name').textContent=S.name;$('name').title=S.name;document.title=S.name+(p==='send'?' · AI Editor working':' · '+dn(S));steps();
+  $('name').textContent=S.name;$('name').title='Click to rename: '+S.name;$('name').style.cursor='pointer';
+  if(!$('name').dataset.renBound){
+    $('name').dataset.renBound='1';
+    $('name').addEventListener('click',async()=>{
+      const n=prompt('Rename video:',S.name);
+      if(n&&n.trim()&&n.trim()!==S.name){
+        try{
+          const r=await fetch('/video/rename',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dir:S.folder,name:n.trim()})});
+          const d=await r.json();
+          if(d.ok){S.name=d.name;$('name').textContent=d.name;$('name').title='Click to rename: '+d.name;document.title=d.name+' · '+dn(S);toast('Renamed to '+d.name)}
+        }catch(e){}
+      }
+    });
+  }
+  document.title=S.name+(p==='send'?' · AI Editor working':' · '+dn(S));steps();
   const idleEdit=makingEdit()&&makeState().idle,busyNow=!idleEdit&&(picked&&(p==='send'||!!S.raw)||makingEdit()||approving);
   const nowAct=busyNow&&(S.activity||[]).filter(x=>x.round===S.round&&!x.done).pop();
   const asking=!!document.documentElement.dataset.ask;   // ask.js: question box is open on this page
