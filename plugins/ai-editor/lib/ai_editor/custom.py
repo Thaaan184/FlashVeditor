@@ -40,7 +40,7 @@ folder, so what you put here keeps working after every update. The editor reads 
 - `templates/<type>.json`: default settings for one animation template, like `flow.json`.
 - `prompts/judge-rubric.md`: your own version of the cut critic's rubric. Copy the editor's first.
 
-Easiest is to tell Claude what you want changed. It writes the file here for you.
+Easiest is to tell the AI what you want changed. It writes the file here for you.
 """
 
 

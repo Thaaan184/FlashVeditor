@@ -179,7 +179,7 @@ def window(repo=None):
         return market()
     kind, _ = where(repo)
     if kind == "fork":
-        print("FAIL Your editor is your own copy (a fork). Ask Claude Code: update my editor.")
+        print("FAIL Your editor is your own copy (a fork). Pull git changes to update.")
         return 2
     branch = out(repo, "rev-parse", "--abbrev-ref", "HEAD")
     if branch != "main":

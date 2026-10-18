@@ -2889,7 +2889,7 @@ def make_handler(token):
                 return self.videos(b, d)
             elif kind == "update":   # Settings, Update: the window runs it itself (run_home), no Claude needed
                 if update_info()["fork"]:
-                    return self.send(409, {"error": "Your editor is your own copy (a fork). Ask Claude Code: update my editor."})
+                    return self.send(409, {"error": "Your editor is your own copy (a fork). Pull git changes to update."})
                 return self.send(200, {"id": start_modal("update")["id"]})
             elif kind == "setup":   # the first run's Start setup (JOB setup, install-all --report)
                 if any(j["type"] == "setup" and j["state"] in ("queued", "taken") for j in d["jobs"]):

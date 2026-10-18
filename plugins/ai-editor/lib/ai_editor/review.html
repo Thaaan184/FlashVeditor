@@ -924,7 +924,7 @@ function renderTracks(){
 function noteHtml(c){
   const old=c.round!==view.round&&!c.queued,t=here(c),live=isCur()&&(!pending()||!!c.queued),nv=(viewRound().alts||[]).length;
   const canEdit=!old&&live&&c.status==='open',ed=canEdit&&editing&&editing.id===c.id;   // review.py editable(): open round or queued
-  const why=canEdit?'':old?`From ${dn(roundOf(c.stage,c.round))}. Leave a new note to change it.`:isCur()&&pending()==='send'?'Claude is working on this draft. Leave a new note for the next one.':pending()==='approve'?'This draft is approved.':'An older draft, read only.';
+  const why=canEdit?'':old?`From ${dn(roundOf(c.stage,c.round))}. Leave a new note to change it.`:isCur()&&pending()==='send'?'The AI is working on this draft. Leave a new note for the next one.':pending()==='approve'?'This draft is approved.':'An older draft, read only.';
   const tm=c.t_end!=null&&!old?fmtx(c.t)+'–'+fmtx(c.t_end):fmtx(t);
   const thumb=old?'':`<img class="thumb${S.vertical?'':' wide'}" src="/frames/${encodeURIComponent(c.frame)}" alt="" loading="lazy">`;
   const imgs=(c.images||[]).length?`<div class="att">${c.images.map((x,i)=>`<a href="/frames/${encodeURIComponent(x)}" target="_blank" rel="noopener"><img src="/frames/${encodeURIComponent(x)}" alt="">Image ${i+1}</a>`).join('')}</div>`:'';
@@ -939,7 +939,7 @@ function noteHtml(c){
   const quote=c.words&&!said?`<span class="q">"${esc(c.words)}"</span>`:'';
   let rep='';
   if(said){const btns=old&&live&&st==='wontfix'?`<button class="obtn" data-anyway="${c.id}">Fix it anyway</button>`:'';
-    rep=(c.reply||moved?`<span class="cr">${c.reply?'Claude: '+esc(c.reply):''}${esc(moved)}</span>`:'')+btns}
+    rep=(c.reply||moved?`<span class="cr">${c.reply?'AI: '+esc(c.reply):''}${esc(moved)}</span>`:'')+btns}
   const notes=[];
   const keep=c.receipt?rcptHtml(c.receipt):'keep' in c&&!old?(canEdit?`<label class="lrule keep${c.keep?'':' off'}"><input type="checkbox" data-keep="${c.id}"${c.keep?' checked':''}><span>Keep as a rule for ${esc(S.style_name||'your style')}</span></label>`
     :c.keep?`<span class="nmeta">Kept as a rule for ${esc(S.style_name||'your style')}</span>`:''):'';
@@ -1004,7 +1004,7 @@ function learnHtml(){
   const L=S.learn;if(!L)return '';const head=`<b>${`Teach ${!L.style||L.style==='My style'?'your style':esc(L.style)} from this video`}</b>`;   // own style: "your style"; a creator's: its name
   const say={none:'No notes this time. Your style stays as it is.',empty:'Nothing in your notes was about the style. It stays as it is.',skipped:'Not saved. Your style stays as it is.'}[L.state];
   if(say)return `<div class="learn">${head}<p>${say}</p></div>`;
-  if(L.state==='reading')return `<div class="learn">${head}<p class="wait"><i></i>Claude is reading your notes...</p></div>`;
+  if(L.state==='reading')return `<div class="learn">${head}<p class="wait"><i></i>The AI is reading your notes...</p></div>`;
   const open=L.state==='proposed',rs=(L.rules||[]).map((r,i)=>[r,i]).filter(([,i])=>open||L.chosen.includes(i));
   const rows='<div class="lrules">'+rs.map(([r,i])=>`<label class="lrule${open&&untick.has(i)?' off':''}"><input type="checkbox" data-li="${i}"${open&&untick.has(i)?'':' checked'}${open?'':' disabled'}><span>${esc(r.rule)}.</span></label>`).join('')+'</div>';
   if(open)return `<div class="learn"><div>${head}<p>From your notes. Untick anything it should not keep.</p></div>${rows}
@@ -1024,7 +1024,7 @@ function makeState(){   // the edit's steps from Claude's status reports (review
   const frac=cur<0?0:Math.min(1,(cur+(closed?1:pct!=null?pct/100:.5))/keys.length);
   const left='';   // no time estimates on a step
   const alive=S.busy||!!(open&&open.log_age!=null&&open.log_age<120);   // a step is open only while Claude reports or its render log moves
-  const idle=!alive?'No word from Claude for a while. If it stopped, go back to Claude and say go on.':'';
+  const idle=!alive?'No response from AI for a while. If it stopped, restart the job.':'';
   return {steps,keys,cur,closed,pct,frac,at,left,idle,style:(S.making&&S.making.style)||'',
     now:open?open.text:cur>=0?steps[keys[cur]]:'Starting',extra:open&&!open.step?open.text:''};
 }
@@ -1076,10 +1076,10 @@ function renderList(){
     h+=also.map(c=>`<button class="chg" ${c.t!=null?`data-t="${c.t}" title="jump to ${fmt(c.t)}"`:'tabindex="-1"'}>${c.t!=null?`<span class="tchip num">${fmt(c.t)}</span>`:''}<span>${esc(c.text)}</span></button>`).join('');
     if(vr.note&&!vr.back_to)h+=`<div class="sum"><p>${esc(vr.note)}</p></div>`;
     if(mine.length)h+=`<p class="sub">Your notes on ${dn(viewRound())}</p>`;
-  }else if((vr.note||cc)&&!(isCur()&&p==='send'))h+=`<div class="claude"><div><b>Claude</b><p>${esc(vr.note||'')}${cc}</p></div></div>`;
+  }else if((vr.note||cc)&&!(isCur()&&p==='send'))h+=`<div class="claude"><div><b>AI</b><p>${esc(vr.note||'')}${cc}</p></div></div>`;
   h+=mine.map(noteHtml).join('');
-  if(mine.length&&isCur()&&!p)h+=`<p class="unsent">${plural(mine.length,'note')} not sent yet. Press Submit feedback to Claude when you are done.</p>`;
-  if(!mine.length&&!prev.length&&!(S.raw&&isCur())&&!(isCur()&&(makingEdit()||p==='approve')))h+=isCur()?'<div class="empty"><b>Your feedback</b>Pause where something is off and type what to change below. Each note is pinned to that moment. Claude sees nothing until you press Submit feedback to Claude.</div>':'<p class="empty2">No notes on this draft.</p>';
+  if(mine.length&&isCur()&&!p)h+=`<p class="unsent">${plural(mine.length,'note')} not sent yet. Press Submit feedback when you are done.</p>`;
+  if(!mine.length&&!prev.length&&!(S.raw&&isCur())&&!(isCur()&&(makingEdit()||p==='approve')))h+=isCur()?'<div class="empty"><b>Your feedback</b>Pause where something is off and type what to change below. Each note is pinned to that moment. The AI sees nothing until you press Submit feedback.</div>':'<p class="empty2">No notes on this draft.</p>';
   if(!mine.length&&prev.length&&isCur()&&!p)h+=`<p class="empty2">No notes on ${dn(viewRound())} yet. Pause where something is off and leave a note.</p>`;
   if(isCur()&&S.made&&S.stage==='edit'&&!S.stills&&view.stage==='edit')h+=`<p class="since made">${esc(S.made)}</p>`;
   if(isCur())h+=workHtml();
@@ -1106,14 +1106,14 @@ const TRK={hooks:['New hooks','A different first line.'],same:['Same order','Fro
   animations:['New animations','New motion graphics and cards.']};
 const DOWN='<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let TR=null,trV=-1,trMenu=null,trAsk='',trOpened=-1;
-const kindLab=ks=>ks[0]==='claude'?'Let Claude decide':ks.map(k=>TRK[k][0]).join(' + ');
+const kindLab=ks=>ks[0]==='claude'?'Let AI decide':ks.map(k=>TRK[k][0]).join(' + ');
 function trSync(){const t=S.trials;if(t.v===trV)return;trV=t.v;trMenu=null;
   TR={versions:t.versions.map(v=>({kinds:[...v.kinds],k0:v.kinds.join(),line:v.line})),hooks:new Set(t.hooks.map((h,i)=>i)),idea:!!t.idea}}
 function trMaking(){const t=S.trials;return t&&t.state==='chosen'?t.picks.versions.map((v,i)=>'t'+(i+1)):[]}
 function trLab(x){const t=S.trials,m=/^t(\d+)$/.exec(x),v=t&&m&&(t.picks||t).versions[m[1]-1];return v?x+' · '+kindLab(v.kinds):lab(x)}
 function trialsHtml(){
   const t=S.trials;trSync();
-  const say=(x,cls)=>`<div class="claude"><div><b>Claude</b><p>${esc(x)}</p></div></div>`;
+  const say=(x,cls)=>`<div class="claude"><div><b>AI</b><p>${esc(x)}</p></div></div>`;
   let h=t.message?say(t.message):'';
   h+=(t.asks||[]).map(q=>`<div class="trq">${esc(q.text)}</div>`+(q.reply?say(q.reply):'')).join('');
   if(t.state==='skipped')return h+'<p class="empty2">Skipped. No trial reels for this one.</p>';
@@ -1124,24 +1124,24 @@ function trialsHtml(){
       <p class="empty2">Each one lands in the Version menu above the video as it renders.</p></div>`;
   }
   const off=!isCur()||t.handled===false;
-  if(t.handled===false)h+='<p class="trwait"><i></i>Claude is reading your question...</p>';
+  if(t.handled===false)h+='<p class="trwait"><i></i>The AI is reading your question...</p>';
   if(t.hooks.length)h+=`<div class="trhooks"><div class="trh">Spare hooks</div>${t.hooks.map((x,i)=>`<label class="lrule trhook"><input type="checkbox" data-trhook="${i}"${TR.hooks.has(i)?' checked':''}${off?' disabled':''}><span>"${esc(x.text)}"${x.from?`<small>${esc(x.from)}</small>`:''}</span></label>`).join('')}</div>`;
-  h+=`<div class="trvs"><div class="trh">Versions<button data-trall${off?' disabled':''}>Let Claude decide all</button></div>`;
+  h+=`<div class="trvs"><div class="trh">Versions<button data-trall${off?' disabled':''}>Let AI decide all</button></div>`;
   TR.versions.forEach((v,i)=>{
-    const line=v.line&&v.kinds.join()===v.k0?v.line:v.kinds[0]==='claude'?'Claude picks the mix that looks most different.':'Claude picks the details when it makes it.';
+    const line=v.line&&v.kinds.join()===v.k0?v.line:v.kinds[0]==='claude'?'The AI picks the mix that looks most different.':'The AI picks the details when it makes it.';
     h+=`<div class="trv"><div class="row"><span class="tn">t${i+1}</span><button class="trsel" data-trk="${i}"${off?' disabled':''}><span>${esc(kindLab(v.kinds))}</span>${DOWN}</button></div><div class="ln">${esc(line)}</div>${trMenu===i?trMenuHtml(v,i):''}</div>`;
-    if(v.idea&&t.idea)h+=`<div class="tridea"><span>Claude suggests: <b>${esc(kindLab(t.idea.kinds))}.</b> ${esc(t.idea.line)}</span><div class="trbtns"><button class="go" data-truse="${i}">Use this</button><button data-tranother="${i}">Another idea</button></div></div>`;
+    if(v.idea&&t.idea)h+=`<div class="tridea"><span>AI suggests: <b>${esc(kindLab(t.idea.kinds))}.</b> ${esc(t.idea.line)}</span><div class="trbtns"><button class="go" data-truse="${i}">Use this</button><button data-tranother="${i}">Another idea</button></div></div>`;
   });
   if(TR.versions.length<8&&!off)h+='<button class="tradd" data-tradd>+ Add a version</button>';
   h+='</div>';
   const n=TR.versions.length;
-  h+=`<div class="trfoot"><div class="trask"><textarea class="trta" rows="2" placeholder="Ask Claude for more hooks, another section, a different order..."${off?' disabled':''}></textarea><button data-trsend aria-label="send to Claude"${off?' disabled':''}><svg width="13" height="13" viewBox="0 0 14 14"><path d="M7 12V2M3 6l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+  h+=`<div class="trfoot"><div class="trask"><textarea class="trta" rows="2" placeholder="Ask AI for more hooks, another section, a different order..."${off?' disabled':''}></textarea><button data-trsend aria-label="send to AI"${off?' disabled':''}><svg width="13" height="13" viewBox="0 0 14 14"><path d="M7 12V2M3 6l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <button class="go" data-trmake${off||!n?' disabled':''}>Make ${plural(n,'trial reel')}</button><button class="skip" data-trskip${off?' disabled':''}>Skip trial reels</button></div>`;
   return h;
 }
 function trMenuHtml(v,i){
   const c=v.kinds[0]==='claude',on=k=>v.kinds.includes(k),dis=k=>k==='same'&&on('rewind')||k==='rewind'&&on('same');
-  return `<div class="trmenu" role="menu"><button class="${c?'on':''}" data-trpick="claude"><i class="rd"></i><span><b>Let Claude decide</b><small>Claude picks the mix that makes this one look most different.</small></span></button><hr><div class="lab">Or pick one or more</div>`
+  return `<div class="trmenu" role="menu"><button class="${c?'on':''}" data-trpick="claude"><i class="rd"></i><span><b>Let AI decide</b><small>The AI picks the mix that makes this one look most different.</small></span></button><hr><div class="lab">Or pick one or more</div>`
     +Object.keys(TRK).map(k=>`<button class="${on(k)?'on':''}" data-trpick="${k}"${dis(k)?' disabled title="Same order and Rewind both set the order"':''}><i></i><span><b>${TRK[k][0]}</b><small>${dis(k)?'Off while '+(k==='same'?'Rewind':'Same order')+' is on: both set the order.':TRK[k][1]}</small></span></button>`).join('')
     +(TR.versions.length>1?`<hr><button class="rm" data-trrm="${i}"><span><b>Remove t${i+1}</b></span></button>`:'')+'</div>';
 }
@@ -1191,7 +1191,7 @@ async function saveEdit(){const c=S.comments.find(c=>c.id===editing.id);if(!c){e
 function editFiles(fs){[...fs].filter(f=>/^image\/(png|jpeg|gif|webp)$/.test(f.type)).slice(0,6-editing.images.length).forEach(f=>{const r=new FileReader();r.onload=()=>{if(editing){editing.images.push(r.result);renderList()}};r.readAsDataURL(f)})}
 $('editpic').onchange=e=>{if(editing)editFiles(e.target.files);e.target.value=''};
 $('list').addEventListener('change',async e=>{const kb=e.target.closest('[data-keep]');
-  if(kb){const r=await fetch('/keep',{method:'POST',body:JSON.stringify({id:+kb.dataset.keep,keep:kb.checked})});if(!r.ok)alert('This note is with Claude now.');return load(true)}
+  if(kb){const r=await fetch('/keep',{method:'POST',body:JSON.stringify({id:+kb.dataset.keep,keep:kb.checked})});if(!r.ok)alert('This note is being processed now.');return load(true)}
   const cb=e.target.closest('[data-li]');if(!cb)return;
   cb.checked?untick.delete(+cb.dataset.li):untick.add(+cb.dataset.li);renderList()});
 $('introx').onclick=()=>{introOff=true;document.body.classList.remove('intro');post('/intro',{})};
@@ -1314,7 +1314,7 @@ function renderTools(){
   const ed=txEditable(),p=pending(),n=nChanges();let h;
   if(view.stage==='edit')h=isCur()&&p==='approve'?'<p>Approved. Words are read only now.</p>':'<p>Read only on the edit. To change a word, leave a note.</p>';
   else if(!isCur())h='<p>An older draft, read only.</p>';
-  else if(p==='send')h='<p>Claude is working on this draft. Words can change again in the next draft.</p>';
+  else if(p==='send')h='<p>The AI is working on this draft. Words can change again in the next draft.</p>';
   else if(p==='approve')h='<p>The cut is approved. Words are read only now.</p>';
   else if(n)h=`<b class="num" title="not applied yet">${plural(n,'change')}</b><button class="pbtn" data-undo title="Cmd+Z">Undo</button><button class="pbtn" data-discard>Discard</button>`;
   else if(HIST.length)h='<button class="pbtn" data-undo title="Cmd+Z">Undo</button>';   // an Accept all, or one tick

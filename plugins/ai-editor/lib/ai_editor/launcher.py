@@ -209,8 +209,8 @@ def connect(folder, now=None):
     return ("opened" if opened else "manual"), text
 
 
-CONNECTED = {"listening": "Claude is already listening.", "pending": "Claude is already starting in another Terminal window.",
-             "opened": "Claude is starting in a new Terminal window. It picks up what you make in the window."}
+CONNECTED = {"listening": "AI worker is already listening.", "pending": "AI worker is already starting in another window.",
+             "opened": "AI worker is starting in a new window. It picks up what you make in the window."}
 
 
 def main(argv=None):
@@ -225,14 +225,14 @@ def main(argv=None):
             webbrowser.open(url)
         if not window_only:
             st, text = ("listening" if home.listening() else "opened", "") if dry else connect(lib)
-            print("  " + CONNECTED.get(st, f"Run this in a new Terminal window so Claude picks up your jobs:\n  {text}"))
+            print("  " + CONNECTED.get(st, f"Run this in a new Terminal window so the AI worker picks up your jobs:\n  {text}"))
         return 0
-    if window_only:   # the page alone, served from this terminal; jobs wait until a Claude listens
+    if window_only:   # the page alone, served from this terminal; jobs wait until a worker listens
         serve = [sys.executable, str(Path(home.__file__)), "serve"]
         if dry:
             print(show(serve, os_name))
             return 0
-        print("Opening your editor...\n  Window only: Claude is not started. Keep this terminal open while you use it.", flush=True)
+        print("Opening your editor...\n  Window only: AI worker is not started. Keep this terminal open while you use it.", flush=True)
         return subprocess.call(serve)
     cmd = plan(os_name)
     if dry:

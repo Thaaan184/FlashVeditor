@@ -1286,7 +1286,7 @@ def make_handler(folder, token):
                             c["keep"], c["keep_set"] = bool(body.get("keep")), True
                             return True
                     return False
-                return self.send(200, {}) if update(rj, kp) else self.send(409, {"error": "Claude has this note now."})
+                return self.send(200, {}) if update(rj, kp) else self.send(409, {"error": "AI is processing this note now."})
             if path == "/undo":   # a receipt's Undo: the saved rule comes out of the style
                 try:
                     msg = undo_receipt(folder, int(body.get("id")))
@@ -1324,7 +1324,7 @@ def make_handler(folder, token):
                         t.update(state="chosen" if act == "make" else "skipped", picks=picks)
                     t["handled"] = False
                     return True
-                return self.send(200, {}) if update(rj, tc) else self.send(409, {"error": "Claude is on it"})
+                return self.send(200, {}) if update(rj, tc) else self.send(409, {"error": "AI is processing this now."})
             if path == "/assets":   # "Anything to add?": add images or links ({"add": [...]}) or take one out ({"remove": i})
                 if "remove" in body:
                     try:
@@ -1412,7 +1412,7 @@ def make_handler(folder, token):
                         prepared_steps(folder, d)
                     return True
                 if not update(rj, ev):
-                    return self.send(409, {"error": "Claude is applying your transcript changes."})
+                    return self.send(409, {"error": "AI is applying your transcript changes."})
                 if body["type"] == "send" and load(rj).get("stills"):   # notes on the stills: that render is not the one
                     drop_spec(folder)
                 return self.send(200, {})
@@ -1468,7 +1468,7 @@ def make_handler(folder, token):
                 if d.get("stage") != "cut" or d.get("raw"):
                     return self.send(409, {"error": "Words can only change on the cut."})
                 if d.get("sent"):
-                    return self.send(409, {"error": "Claude is working on this draft."})
+                    return self.send(409, {"error": "AI is working on this draft."})
                 try:
                     out = apply_edits(folder, restore, cut, pause)
                 except Exception as e:   # a spans.json or transcript this cannot read: say so, never drop the connection
@@ -1493,7 +1493,7 @@ def make_handler(folder, token):
             if not c:
                 return self.send(404, {"error": "no such note"})
             if not editable(d, c):
-                return self.send(409, {"error": "Claude is working on this draft." if d.get("sent") else "This note is from an earlier draft."})
+                return self.send(409, {"error": "AI is working on this draft." if d.get("sent") else "This note is from an earlier draft."})
             new = dict(c)
             if "text" in body:
                 new["text"] = str(body["text"] or "").strip()
@@ -1533,7 +1533,7 @@ def make_handler(folder, token):
                         return True
                 return False
             if not update(rj, put):
-                return self.send(409, {"error": "Claude is working on this draft."})
+                return self.send(409, {"error": "AI is working on this draft."})
             return self.send(200, new)
     return H
 
@@ -1801,9 +1801,9 @@ def go_back(folder, n):
     if not r.get("snap") or not snap.is_dir() or not Path(r["video"]).is_file():
         raise ValueError("this round was made before rounds could be restored")
 
-    def check(d):   # under the lock: Claude may have taken the round meanwhile
+    def check(d):   # under the lock: AI may have taken the round meanwhile
         if d.get("sent") or d.get("raw") or d.get("stopped"):
-            raise ValueError("Claude has this round" if d.get("sent") else "this round cannot go back now")
+            raise ValueError("AI has this round" if d.get("sent") else "this round cannot go back now")
         for c in d["comments"]:   # the open round's notes go with the user onto the restored round
             if c["stage"] == d["stage"] and c["round"] == d["round"] and c["status"] == "open":
                 c["queued"] = True

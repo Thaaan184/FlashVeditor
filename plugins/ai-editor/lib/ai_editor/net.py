@@ -18,8 +18,8 @@ import ssl
 import sys
 import urllib.request
 
-FIX = ("This computer's Python can't check secure websites yet. Say 'fix my certificates' in Claude Code "
-       "(or run Install Certificates.command in your Python folder).")
+FIX = ("This computer's Python can't check secure websites yet. Please run Install Certificates.command "
+       "in your Python folder, or install certifi.")
 
 
 def context():

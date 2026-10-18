@@ -1114,7 +1114,7 @@ function copyText(t,el){try{navigator.clipboard.writeText(t)}catch(e){}el.innerH
 // ---------------------------------------------------------------- H6
 // Make my video goes straight to the editor: round 0 plays the clip and lists every step of the cut (home.py videos)
 // "Try it with a sample video": the repo's public sample take, downloaded once, then the real flow with its decisions shipped
-async function trySample(){if((ui.sample||{}).busy)return;ui.sample={busy:1};render();if(!GS().setup&&!latest('setup')){await post('/job',{type:'setup'});if(!S.listening)await connectClaude()}const r=await post('/sample',{});ui.sample=r._ok?null:{msg:r.msg||'That did not work. Try again.'};await load();if(r._ok)toEditor(r);else render()}
+async function trySample(){if((ui.sample||{}).busy)return;ui.sample={busy:1};render();if(!GS().setup&&!latest('setup')){await post('/job',{type:'setup'});if(!S.listening)await connectWorker()}const r=await post('/sample',{});ui.sample=r._ok?null:{msg:r.msg||'That did not work. Try again.'};await load();if(r._ok)toEditor(r);else render()}
 const sampleRow=()=>{const b=(ui.sample||{}).busy;return `<div class="row smprow" style="gap:12px;flex-wrap:wrap"><span class="t2" style="color:var(--t2);font-size:14px">No footage handy?</span><button class="b2" ${b?'disabled':''} onclick="trySample()">${b?'Getting the sample video...':'Try it with a sample video'}</button></div>${(ui.sample||{}).msg?`<div class="msg bad">${CROSS}<span>${esc(ui.sample.msg)}</span></div>`:''}`};
 function getAuthToken(){
   let t = '';
@@ -1217,7 +1217,7 @@ function scriptSec(){
     ${nv.scriptMsg?`<div class="msg bad">${CROSS}<span>${esc(nv.scriptMsg)}</span></div>`:''}</div>`;
   return `<div class="sec"><span class="h">Add your script</span>
     <div class="row" style="gap:8px"><button class="btn quiet sm" onclick="nv.draft='';nv.scriptMsg='';render();showScriptBox()">Paste it</button>${pick}</div>
-    ${nv.scriptMsg?`<div class="msg bad">${CROSS}<span>${esc(nv.scriptMsg)}</span></div>`:'<div class="muted">Optional. Claude keeps the lines your script says twice.</div>'}</div>`;
+    ${nv.scriptMsg?`<div class="msg bad">${CROSS}<span>${esc(nv.scriptMsg)}</span></div>`:'<div class="muted">Optional. The AI keeps the lines your script says twice.</div>'}</div>`;
 }
 // the open box and its buttons scroll clear of the panel's sticky bottom bar
 function showScriptBox(){
@@ -1256,7 +1256,7 @@ function assetSec(){
   return `<div class="sec"><span class="h">Add images or links</span>
     <div class="row" style="gap:8px"><input id="assetin" class="input" style="height:38px;font-family:inherit" placeholder="Paste a link or an image" onkeydown="if(event.key==='Enter')addLink()" onpaste="assetPaste(event)"><button class="btn quiet sm" onclick="addLink()">Add</button><label class="choose" style="height:38px" title="Choose images">${ic('image',15,1.8)}Images...<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="hide" onchange="addImages(this.files);this.value=''"></label></div>
     ${n?`<div class="alist">${nv.assets.map(assetRow).join('')}</div>`:''}
-    ${nv.assetMsg?`<div class="msg bad">${CROSS}<span>${esc(nv.assetMsg)}</span></div>`:'<div class="muted">Optional. Web pages, X posts, YouTube, GitHub, docs or your own pictures. Claude uses these before looking for anything else.</div>'}</div>`;
+    ${nv.assetMsg?`<div class="msg bad">${CROSS}<span>${esc(nv.assetMsg)}</span></div>`:'<div class="muted">Optional. Web pages, X posts, YouTube, GitHub, docs or your own pictures. The AI uses these before looking for anything else.</div>'}</div>`;
 }
 function addLink(){
   const e=$('#assetin'),us=(e?e.value:'').split(/\s+/).filter(Boolean);if(!us.length)return;
@@ -1332,7 +1332,7 @@ const PENCIL='<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"
 // rename and "Use it for": a pencil turns the text into a field; Enter saves, Esc puts it back
 function editField(kind,id,val,style=''){
   if(ui.edit&&ui.edit.kind===kind&&ui.edit.id===id)return `<span style="display:inline-flex;flex-direction:column;gap:6px;min-width:0;flex:1"><input class="input" id="ed-${kind}" style="font:inherit;height:auto;padding:4px 8px;${style}" value="${esc(ui.edit.val??val)}" onclick="event.stopPropagation()" oninput="ui.edit.val=this.value" ${kind==='name'?'onblur="blurName(this.value)"':''} onkeydown="event.stopPropagation();if(event.key==='Enter')saveEdit();if(event.key==='Escape'){if(ui.edit.fresh)ui.kept.add(ui.edit.id);ui.edit=null;render()}" placeholder="${kind==='use'?'talking-head reels about AI tools':kind==='name'?'Name your style':''}" aria-label="${kind==='name'?'Style name':''}">${ui.edit.msg?`<span class="msg bad" style="font-size:13px">${CROSS}<span>${esc(ui.edit.msg)}</span></span>`:''}</span>`;
-  return `<button class="hlink row" style="gap:6px;color:var(--t3);font-size:inherit;padding:2px" title="${kind==='use'?'Change when Claude uses it':'Rename'}" aria-label="${kind==='use'?'Change when Claude uses it':'Rename'}" onclick="event.stopPropagation();ui.edit={kind:'${kind}',id:${esc(JSON.stringify(id))},val:null};render();setTimeout(()=>{const e=$('#ed-${kind}');if(e){e.focus();e.select()}},0)">${PENCIL}</button>`;
+  return `<button class="hlink row" style="gap:6px;color:var(--t3);font-size:inherit;padding:2px" title="${kind==='use'?'Change when the AI uses it':'Rename'}" aria-label="${kind==='use'?'Change when the AI uses it':'Rename'}" onclick="event.stopPropagation();ui.edit={kind:'${kind}',id:${esc(JSON.stringify(id))},val:null};render();setTimeout(()=>{const e=$('#ed-${kind}');if(e){e.focus();e.select()}},0)">${PENCIL}</button>`;
 }
 async function saveEdit(e=ui.edit){
   if(!e)return;const val=e===ui.edit?(($('#ed-'+e.kind)||{}).value??e.val??''):e.val??'';
@@ -1509,7 +1509,7 @@ function vSkills(){
   for(const c of cards)if(c.kind==='skill'&&!all.some(x=>x.name===c.skill)&&!oth.some(x=>x.name===c.skill))all.push({name:c.skill,description:c.description||'',found:!!c.found,own:false,deleted:!!c.deleted});
   const ls=all.filter(x=>!x.hidden),ols=oth.filter(x=>!x.hidden),hid=[...all,...oth].filter(x=>x.hidden);
   const jobs=t=>S.jobs.filter(j=>j.type===t),last=(t,f)=>jobs(t).filter(f).at(-1),nj=last('skill-new',()=>true);
-  const mk=ui.skNew||nj&&(nj.state!=='done'||Date.now()/1000-(nj.finished||0)<600)?`<div class="ssec"><div class="shd"><b>Make a new skill</b></div><div class="t2" style="white-space:normal">Say what you like and what it should do: the look, the pace, creators or videos you want it to copy. Claude opens in a new window, asks what it needs, writes the skill, tests it and shows you.</div>
+  const mk=ui.skNew||nj&&(nj.state!=='done'||Date.now()/1000-(nj.finished||0)<600)?`<div class="ssec"><div class="shd"><b>Make a new skill</b></div><div class="t2" style="white-space:normal">Say what you like and what it should do: the look, the pace, creators or videos you want it to copy. The AI opens a session, asks what it needs, writes the skill, tests it and shows you.</div>
       ${chatBox('sk-new','I like big yellow captions on the key word, a zoom every few seconds, and logos when I name a tool','makeSkill()',nj,'Start')}</div>`:'';
   const njl='';
   const row=x=>{const us=used(x.name),open=ui.skImp===x.name,j=last('skill-change',j=>j.args.skill===x.name);
@@ -1518,15 +1518,15 @@ function vSkills(){
       ${x.rules?`<div class="t2">${x.rules} learned rule${x.rules>1?'s':''}</div>`:''}
       <div class="acts">${x.found===false?'':`<button class="b2 s" onclick="useSkill(${J(x.name)})">Use as a style</button>${x.own?`<button class="b2 s" onclick="ui.skImp=${open?'null':J(x.name)};render();setTimeout(()=>{const e=$('#sk-imp');if(e)e.focus()},0)">Improve with feedback</button>`:''}<button class="b2 s" onclick="skillFile('open',${J(x.name)})">Open the file</button><button class="b2 s" onclick="skillFile('reveal',${J(x.name)})">Show in ${FINDER()}</button>`}</div>
       ${open?`<div class="fld"><div class="in2"><input id="sk-imp" placeholder="never zoom in the first second" aria-label="What to change in this skill" onkeydown="if(event.key==='Enter')improveSkill(${J(x.name)})"></div><button class="b1" onclick="improveSkill(${J(x.name)})">Send</button></div>
-        <div class="t2" style="white-space:normal">Claude turns it into a rule, shows you the exact line and saves it when you say yes.</div>`:''}
+        <div class="t2" style="white-space:normal">The AI turns it into a rule, shows you the exact line and saves it when you say yes.</div>`:''}
       ${j&&(j.state!=='done'||Date.now()/1000-(j.finished||0)<600)?`<div class="t2" style="white-space:normal;color:var(--ink)">${jobText(j)}</div>`:''}</div>`};
   // one list, the same rows everywhere: yours, then plugins'. Hidden and Not for editing open in place at the bottom
   const grp=xs=>{const a=xs.filter(x=>!x.plugin),b=xs.filter(x=>x.plugin);return a.length&&b.length?`<b class="skg">Your skills</b>${a.map(row).join('')}<b class="skg">From plugins</b>${b.map(row).join('')}`:xs.map(row).join('')};
   const tail=(k,lbl,xs)=>xs.length?`<button class="ul skq" aria-expanded="${!!ui[k]}" onclick="ui.${k}=!ui.${k};render()">${ui[k]?'Hide '+lbl.toLowerCase():lbl+' ('+xs.length+')'}</button>${ui[k]?`<div class="skl">${xs.map(row).join('')}</div>`:''}`:'';
   const more=hid.length||ols.length?`<div class="ssec">${tail('skHid','Hidden',hid)}${tail('skOth','Not for editing',ols)}</div>`:'';
   const body=(ui.skills==null&&!ls.length?'<div class="none">Looking for skills...</div>':ls.length?`<div class="skl">${grp(ls)}</div>`
-    :ui.skNew?'':`<div class="ssec"><div class="t1" style="white-space:normal;line-height:22px">You have no skills that edit videos yet. Claude can make one with you: say what it should do, and it writes and tests it.</div><button class="b1" style="align-self:flex-start" onclick="newSkill()">${ic('plus',16,2.2)}Make a new skill</button></div>`)+more;
-  return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div class="ph"><h1>Skills</h1><p>A skill is a set of steps Claude follows. A style can use one to make your edit.</p></div>
+    :ui.skNew?'':`<div class="ssec"><div class="t1" style="white-space:normal;line-height:22px">You have no skills that edit videos yet. The AI can make one with you: say what it should do, and it writes and tests it.</div><button class="b1" style="align-self:flex-start" onclick="newSkill()">${ic('plus',16,2.2)}Make a new skill</button></div>`)+more;
+  return `<div class="pgc"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div class="ph"><h1>Skills</h1><p>A skill is a set of steps the AI follows. A style can use one to make your edit.</p></div>
       <div class="row hact">${ls.length?`<button class="b1" onclick="newSkill()">${ic('plus',16,2.2)}Make a new skill</button>`:''}</div></div>${mk}${njl}${body}</div>`;
 }
 function newSkill(){ui.skNew=true;if(rv!=='skills')rgo('skills');else render();setTimeout(()=>{const e=$('#sk-new');if(e)e.focus()},0)}
@@ -1578,13 +1578,13 @@ function createModal(){
         <button class="b1" ${rows.length&&!st.busy?'':'disabled'} onclick="studyLink()">${st.busy?'Starting...':'Analyse this format'}</button></div></div>
     <button class="nbox brow" onclick="buildYourself()"><div><b>Build it yourself</b><p>Pick captions, zooms, cut and sound yourself.</p></div>${ic('chev',18,2)}</button>
     <button class="nbox brow" onclick="ui.study={combine:{sel:[],text:''}};render()"><div><b>Combine styles</b><p>Pick two or more of your styles and say what to take from each.</p></div>${ic('chev',18,2)}</button>
-    <button class="nbox brow" onclick="openSkills()"><div><b>Use your own skill</b><p>A Claude Code skill that edits videos makes the edit.</p></div>${ic('chev',18,2)}</button></div></div>`;
+    <button class="nbox brow" onclick="openSkills()"><div><b>Use your own skill</b><p>An editing skill makes the edit.</p></div>${ic('chev',18,2)}</button></div></div>`;
 }
-// Analyse a format: what the user likes (Claude looks closer at those) and their own files (videos, pictures, PDFs, notes),
+// Analyse a format: what the user likes (the AI looks closer at those) and their own files (videos, pictures, PDFs, notes),
 // copied to <library>/references and named in the teardown's likes.md
 function likesBox(b){
   const fs=b.files||[];
-  return `<div class="lkb"><b>What do you like about them?</b><span class="t2">Optional. Claude looks closer at these parts.</span>
+  return `<div class="lkb"><b>What do you like about them?</b><span class="t2">Optional. The AI looks closer at these parts.</span>
     <textarea id="lk-notes" class="input" placeholder="The captions pop in one word at a time. The zoom on every punchline. The sound on each cut." oninput="lbOf('study').notes=this.value">${esc(b.notes||'')}</textarea>
     ${fs.map((f,i)=>`<div class="lr rf">${ic('file',16,2)}<span class="t1" title="${esc(f.name)}">${esc(f.name)}</span><span class="t2">${f.bad?esc(f.bad):f.path?'Added':`Adding... ${f.pct||0}%`}</span><button class="lx" aria-label="Remove this file" title="Remove" onclick="lbOf('study').files.splice(${i},1);render()">${ic('x',16,2)}</button></div>`).join('')}
     <label class="ul" style="align-self:flex-start;cursor:pointer">Add files<input type="file" multiple hidden onchange="addRefs(this.files);this.value=''"></label>
@@ -1610,7 +1610,7 @@ function combineModal(){
     <div class="row" style="justify-content:space-between"><button class="back" style="text-decoration:none" onclick="ui.study={};render()">${ic('back',14,2)}<b class="mt2" id="mtitle">Combine styles</b></button><button class="mx2" aria-label="Close" title="Close" onclick="closeCreate()">${ic('x',18,2)}</button></div>
     <p class="t2" style="white-space:normal;margin:0">Pick two or more. The first one you pick is the base.</p>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:40vh;overflow:auto">${ls.map(c=>{const i=k.sel.indexOf(c.id);return `<button class="nbox brow" style="padding:12px 16px;${i>=0?'outline:1.5px solid var(--ink)':''}" onclick="cmbPick(${J(c.id)})"><span class="row" style="gap:12px;min-width:0">${avaHTML(c.face,32)}<span style="min-width:0"><b>${esc(dname(c))}</b><p style="margin:0">${esc(origin(c))}</p></span></span><span class="t1" style="font-weight:600">${i>=0?(i?'Picked':'Base'):''}</span></button>`}).join('')}</div>
-    <label class="lkb"><b>What should it take from each?</b><span class="t2">Optional. Claude sets it up from your words.</span>
+    <label class="lkb"><b>What should it take from each?</b><span class="t2">Optional. The AI sets it up from your words.</span>
       <textarea id="cmb-text" class="input" placeholder="Captions from the first one, zooms and pace from the second, no sound effects." oninput="ui.study.combine.text=this.value">${esc(k.text||'')}</textarea></label>
     ${k.msg?`<div class="msg bad">${CROSS}<span>${esc(k.msg)}</span></div>`:''}
     <button class="b1" style="align-self:flex-end" ${k.sel.length>1&&!k.busy?'':'disabled'} onclick="combineStyles()">${k.busy?'Combining...':`Combine ${k.sel.length>1?k.sel.length+' styles':'styles'}`}</button></div></div>`;
@@ -1620,13 +1620,13 @@ async function combineStyles(){
   const k=ui.study.combine;k.busy=1;render();
   const r=await post('/style/combine',{ids:k.sel,text:k.text||''});
   if(!r._ok){k.busy=0;k.msg=r.error||'That did not combine.';return render()}
-  ui.create=false;ui.study=null;toast(k.text?'Combined. Claude is setting it up from your words.':'Combined.');await loadLib();openStyle(r.id);load();
+  ui.create=false;ui.study=null;toast(k.text?'Combined. The AI is setting it up from your words.':'Combined.');await loadLib();openStyle(r.id);load();
 }
-// "Use your own skill": the editing skills Claude Code can load (/skills), pick one, name it, Create
+// "Use your own skill": the editing skills that can be loaded (/skills), pick one, name it, Create
 async function openSkills(forId){ui.study={skills:{list:null,for:forId||null}};if(forId)ui.create=true;render();try{ui.study.skills.list=(await (await fetch('/skills')).json()).skills.filter(x=>!x.hidden)}catch(e){ui.study.skills.list=[]}render()}
 function skillModal(){
   const k=ui.study.skills,ls=k.list;
-  const body=!ls?'<div class="t2">Looking for skills...</div>':!ls.length?`<div class="t2" style="white-space:normal">You have no skills that edit videos yet. Claude can make one with you, step by step.</div><button class="b1" style="align-self:flex-start" onclick="closeCreate();newSkill()">Make a new skill</button>`
+  const body=!ls?'<div class="t2">Looking for skills...</div>':!ls.length?`<div class="t2" style="white-space:normal">You have no skills that edit videos yet. The AI can make one with you, step by step.</div><button class="b1" style="align-self:flex-start" onclick="closeCreate();newSkill()">Make a new skill</button>`
     :ls.map(x=>`<button class="nbox brow" style="${k.sel===x.name?'outline:1.5px solid var(--ink)':''}" onclick="ui.study.skills.sel=${J(x.name)};ui.study.skills.name=ui.study.skills.name||${J(skStyleName(x.name))};render()"><div style="min-width:0"><b style="font-family:var(--mono)">/${esc(x.name)}</b><p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(x.description||'')}</p></div></button>`).join('');
   return `<div class="modalbg" onclick="if(event.target===this)closeCreate()"><div class="modal nsm" role="dialog" aria-modal="true" aria-labelledby="mtitle">
     <div class="row" style="justify-content:space-between">${k.for?'<b class="mt2" id="mtitle">Pick another skill</b>':`<button class="back" style="text-decoration:none" onclick="ui.study={};render()">${ic('back',14,2)}<b class="mt2" id="mtitle">Use your own skill</b></button>`}<button class="mx2" aria-label="Close" title="Close" onclick="closeCreate()">${ic('x',18,2)}</button></div>
@@ -1696,7 +1696,7 @@ function vStyle(){
       <div class="ph"><button class="back" style="text-decoration:none" onclick="rgo('new')">${ic('back',14,2)}New video · step 2 of 2</button><h1>Pick a style</h1></div>
       <div class="clipsum"><span class="th" style="background-image:url('${esc(c0.thumb||'')}')"></span><div style="min-width:0"><div class="t1" style="font-weight:600">${n>1?`${n} clips, ${nv.join?'joined':'separate'}`:esc(c0.name)}</div><div class="t2">${n} clip${n>1?'s':''}${total()?' · '+fmtT(Math.round(total())):''} · ${aspectOf()==='9:16'?'Tall':'Wide'} ${aspectOf()}</div></div><button class="ul" onclick="rgo('new')">Change</button></div></div>
     <div class="sec2"><div class="sh"><b>Styles</b><button class="b2 s" onclick="openCreate()">${ic('plus',14,2.2)}New style</button></div>${gridRows([...cards].sort((a,b)=>(isDefault(b)-isDefault(a))||(!!b.studying-!!a.studying)||(!!b.own-!!a.own)||((b.made||0)-(a.made||0))).map(c=>pickCard(c,idx(c))),per)}</div>
-    <div class="pfoot"><div style="min-width:0"><div class="t1" style="font-weight:600">${esc(cur?cur.name:styleName(nv.style))}</div>${cur&&cur.runs?`<div class="t2 calls" style="margin:4px 0 6px">Runs ${cur.runs.map(r=>`<span>${esc(r)}</span>`).join(' → ')} · <a href="#" onclick="openStyle(${J(cur.id)});return false">Change</a></div>`:''}<div class="t2" style="white-space:normal">First the cut. Captions, zooms and sound start after you approve it.${S.new_claude?` ${n>1&&!nv.join?'Each video gets':'It gets'} its own Claude in a new Terminal window.`:''}</div>${S.listening||S.new_claude?'':`<div class="t2" style="white-space:normal;margin-top:10px">${connectHTML('Claude is not listening.')}</div>`}</div>
+    <div class="pfoot"><div style="min-width:0"><div class="t1" style="font-weight:600">${esc(cur?cur.name:styleName(nv.style))}</div>${cur&&cur.runs?`<div class="t2 calls" style="margin:4px 0 6px">Runs ${cur.runs.map(r=>`<span>${esc(r)}</span>`).join(' → ')} · <a href="#" onclick="openStyle(${J(cur.id)});return false">Change</a></div>`:''}<div class="t2" style="white-space:normal">First the cut. Captions, zooms and sound start after you approve it.${S.new_claude?` ${n>1&&!nv.join?'Each video runs':'It runs'} in its own worker process.`:''}</div>${S.listening||S.new_claude?'':`<div class="t2" style="white-space:normal;margin-top:10px">${connectHTML('Worker is starting.')}</div>`}</div>
       <button class="b1" id="make" onclick="makeVideo()">Make my video</button></div></div>`;
 }
 async function makeVideo(){
@@ -1733,7 +1733,7 @@ function rulesSec(P){
   const row=r=>`<div class="lrow2"><div style="min-width:0"><div>${esc(r.rule)}</div><div class="t2" style="white-space:normal">${[dayOf(r.last),r.video?'from '+esc(vidName(r.video)):'from your feedback',r.said>1?`said ${r.said} times`:''].filter(Boolean).join(' · ')}</div></div>`
     +(r.id!=null?`<button class="b2 s" onclick="forgetRule(${r.id})">Remove</button>`:r.removable?`<button class="b2 s" onclick="forgetSkillRule(${J(r.rule)})">Remove</button>`:'')+'</div>';
   return `<div class="ssec"><div class="shd"><b style="font-size:17px">Learned rules</b>${P.rules.length?`<span class="t2">${P.rules.length} from your notes</span>`:''}</div>
-    ${P.rules.map(row).join('')||`<div class="t2" style="white-space:normal">None yet. Tell Claude above, or leave a note on a video made with this style.</div>`}</div>`;
+    ${P.rules.map(row).join('')||`<div class="t2" style="white-space:normal">None yet. Tell the editor above, or leave a note on a video made with this style.</div>`}</div>`;
 }
 async function forgetSkillRule(text){const r=await post('/style/forget',{id:ui.sp,text});if(r._ok){ui.spage=r;loadLib()}else toast(r.error||'That did not work.');render()}
 // "What runs": the steps this style runs on every video, in order; logos and animations switch on or off
@@ -1744,7 +1744,7 @@ function chainSec(P){
     :`<div class="addsk"><select id="addsk-s" aria-label="Skill to add" onchange="ui.addsk.sel=this.value"><option value="">${ui.skills?'Pick a skill':'Looking for skills...'}</option>${opts.map(x=>`<option value="${esc(x.name)}" ${x.name===A.sel?'selected':''}>/${esc(x.name)}</option>`).join('')}</select>
       <span class="seg4">${[['before','Before the edit'],['after','After the video']].map(([k,l])=>`<button class="${A.at===k?'on':''}" onclick="ui.addsk.at='${k}';render()">${l}</button>`).join('')}</span>
       <button class="b1 s" onclick="addChainSkill()" ${A.sel?'':'disabled'}>Add</button><button class="b2 s" onclick="ui.addsk=null;render()">Cancel</button></div>
-      <div class="t2" style="white-space:normal">Before the edit: it runs on the cut. After the video: it runs on the finished video, like a thumbnail or a description. Or tell Claude above.</div>`;
+      <div class="t2" style="white-space:normal">Before the edit: it runs on the cut. After the video: it runs on the finished video, like a thumbnail or a description. Or tell the editor above.</div>`;
   return `<div class="ssec"><div class="shd"><b style="font-size:17px">What runs</b><span class="t2">In this order, on every video</span></div><ol class="chain">${P.chain.map((x,i)=>`<li class="${x.on===false?'off':''}"><span class="cn">${i+1}</span><div class="cx"><b>${esc(x.name)}</b><span>${esc(x.what)}</span></div>${x.added?`<button class="b2 s" onclick="setChainSkill(${J(x.added)},null)">Remove</button>`:x.on==null?'<span class="al">Always</span>':`<button class="sw ${x.on?'on':''}" role="switch" aria-checked="${x.on}" aria-label="${esc(x.name)}" onclick="setChain('${x.key}',${!x.on})"><i></i></button>`}</li>`).join('')}</ol>${add}</div>`;
 }
 async function setChainSkill(skill,at){const r=await post('/style/chain',{id:ui.sp,skill,at});if(r._ok){ui.spage=r;loadLib()}else toast(r.error||'That did not save.');render()}
@@ -1758,9 +1758,9 @@ function vSkillPage(P){
       <button class="b1" style="width:100%" onclick="nv.style=${J(P.id)};nv.picked=1;rgo('new')">Make a video with this style</button></div>
     <div class="spr"><div style="display:flex;flex-direction:column;gap:10px"><div class="row" style="justify-content:space-between;gap:12px"><span class="row" style="gap:8px;min-width:0;flex:1">${editing?'':`<h1 class="sname">${esc(dname(P))}</h1>`}${editField('name',P.id,P.name,'font-size:24px;font-weight:600')}</span><span class="pgdots">${sMenu(card)}</span></div>
         <span style="font:500 14px var(--mono)">/${esc(K.name)}</span>
-        <div class="t1" style="white-space:normal;line-height:22px">${K.found?esc(K.description||'This style runs its own skill.'):K.deleted?'Its skill was deleted. Pick another skill for this style, or archive it.':`Skill not found: the editor can't see /${esc(K.name)} on this computer. Claude still tries it when you make a video. If it can't, it offers the standard edit instead.`}</div>
+        <div class="t1" style="white-space:normal;line-height:22px">${K.found?esc(K.description||'This style runs its own skill.'):K.deleted?'Its skill was deleted. Pick another skill for this style, or archive it.':`Skill not found: the editor can't see /${esc(K.name)} on this computer. The editor still tries it when you make a video. If it can't, it offers the standard edit instead.`}</div>
         ${K.found?'':`<div class="row" style="gap:8px;flex-wrap:wrap"><button class="b2 s" onclick="openSkills(${J(P.id)})">Pick another skill</button>${isArch(card)?'':`<button class="b2 s" onclick="archStyle(${J(P.id)},true)">Archive style</button>`}</div>`}</div>
-      ${chatBox('tell',`Tell Claude what to change in /${K.name}: fewer cards, bigger captions`,'tellChange()',liveJob(P.job))}
+      ${chatBox('tell',`Tell the AI what to change in /${K.name}: fewer cards, bigger captions`,'tellChange()',liveJob(P.job))}
       ${chainSec(P)}${K.calls&&K.calls.length?`<div class="t2 calls">Also calls ${K.calls.map(x=>`<span>/${esc(x)}</span>`).join(' ')}</div>`:''}${rulesSec(P)}
       ${P.references&&P.references.videos.length?`<div class="ssec"><div class="shd"><b>Analysed from</b></div><div class="refs">${P.references.videos.map(v=>`<a class="ref" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="rth" style="${v.thumbnail?`background-image:url('${esc(v.thumbnail)}')`:''}">${v.thumbnail?'':LINKG}</span><span style="min-width:0;flex:1"><span class="t1" style="display:block">${esc(v.title||shortLink(v.url))}</span></span></a>`).join('')}</div></div>`:''}</div></div>`;
 }
@@ -1780,7 +1780,7 @@ function vStylePage(){
     <div class="spr"><div class="row sphd" style="gap:20px;align-items:flex-start">${P.example&&!P.cover?`<video class="spex" src="${esc(P.example)}" poster="${esc(P.thumb)}" controls playsinline preload="metadata" aria-label="Example video in this style"></video>`:P.own?'':`<span class="sth" style="${bgPic(pic)}"></span>`}
         <div class="sptx" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px"><div class="row" style="justify-content:space-between;gap:12px"><span class="row" style="gap:8px;min-width:0;flex:1">${editing?'':`<h1 class="sname">${esc(dname(P))}</h1>`}${editField('name',P.id,P.name,'font-size:24px;font-weight:600')}</span><span class="pgdots">${sMenu(card)}</span></div>
           ${meta}${useFor(P)}</div></div>
-      ${chatBox('tell','Tell Claude what to change: captions a bit bigger, fewer zooms, no sound effects','tellChange()',job)}
+      ${chatBox('tell','Tell the AI what to change: captions a bit bigger, fewer zooms, no sound effects','tellChange()',job)}
       ${rulesSec(P)}${chainSec(P)}
       <div class="ssec">${secHd('caption','Captions',((fact3(card).find(f=>f[0]==='caption')||[])[2]||'').replace(/^Captions, /,''),C.tag,'captions')}
         <div class="ctiles"><button class="ct ${C.off?'on':''}" onclick="setCtl('captions.preset','none')"><span class="ci"><span class="t2">No captions</span></span><b>None</b></button>${C.tiles.slice(0,5).map(t=>`<button class="ct ${t.id===C.sel&&!C.off?'on':''}" onclick="setCtl('captions.preset',${J(t.id)})"><span class="ci">${t.img?`<img src="${esc(t.img)}" alt="${esc(t.name)} captions" style="object-position:50% ${t.block.y_pct||C.y}%">`:`<span class="t2">${t.err?'No preview':'Loading...'}</span>`}</span><b>${esc(capName(t))}</b></button>`).join('')}</div>
@@ -1798,7 +1798,7 @@ function vStylePage(){
       ${motionSec(P)}
       ${P.references&&P.references.videos.length?`<div class="ssec"><div class="shd"><b>Analysed from</b>${P.references.profile?`<a href="${esc(P.references.profile)}" target="_blank" rel="noopener" style="font-size:13px">Their profile</a>`:''}</div>
         <div class="refs">${P.references.videos.map(v=>{const pl=platOf(v.url),h=linkHandle(v.url);return `<a class="ref" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="rth" style="${v.thumbnail?`background-image:url('${esc(v.thumbnail)}')`:''}">${v.thumbnail?'':pl?logo(pl,16):LINKG}</span><span style="min-width:0;flex:1"><span class="t1" style="display:block">${esc(v.title||shortLink(v.url))}</span><span class="t2" style="display:flex;gap:6px;align-items:center">${pl?logo(pl,12):''}${h?'@'+esc(h):esc(shortLink(v.url))}</span></span></a>`}).join('')}</div></div>`:''}
-      <div class="ssec two">${P.sample?'<div></div>':`<div><div class="shd"><b>Its skill</b></div><div class="row" style="gap:10px;flex-wrap:wrap"><span style="font:500 14px var(--mono)">/${esc(P.skill.name)}</span><button class="b2 s" onclick="post('/style/reveal',{id:ui.sp}).then(loadStyle)">Open the skill file</button></div><div class="t2" style="white-space:normal;margin-top:8px">Say "/${esc(P.skill.name)}" in Claude Code to edit a video in this style.</div></div>`}
+      <div class="ssec two">${P.sample?'<div></div>':`<div><div class="shd"><b>Its skill</b></div><div class="row" style="gap:10px;flex-wrap:wrap"><span style="font:500 14px var(--mono)">/${esc(P.skill.name)}</span><button class="b2 s" onclick="post('/style/reveal',{id:ui.sp}).then(loadStyle)">Open the skill file</button></div><div class="t2" style="white-space:normal;margin-top:8px">Run "/${esc(P.skill.name)}" to edit a video in this style.</div></div>`}
         <div></div></div>
       <div class="ssec sfoot"><span class="okc" style="color:var(--t3)">${ic('check',16,2.4)}</span><span>Saved as you go. Your next videos use this style.</span><span class="t2">Videos already made stay as they are.</span></div></div></div>`;
 }
@@ -1842,7 +1842,7 @@ function connectHTML(lead,old){
   return `<span class="cnx">${l}Auto-processing via ${esc(prov)}...</span>`;
 }
 async function stopJob(id){const r=await post('/stop',{id});toast(r.stopped?'Stopped. AI Worker stops at its next step.':'Stopped.');await load()}
-async function connectClaude(){await load()}
+async function connectWorker(){await load()}
 
 // ---- home (welcome back), your videos, my style, settings
 // where a video is (home.py phase): the user's turn, done, or what AI is doing now
@@ -2207,7 +2207,7 @@ function sideHTML(){
     <div class="sb-fold"><div class="sb-fh">Folders<button class="sb-add" title="New folder" aria-label="New folder" onclick="newFolder(null,null,rv==='mystyle'||rv==='stylepage'?'styles':'videos')">${ic('plus',12,2.4)}</button></div>
       <div class="sb-flist">${fd('videos').folders.map(f=>frow('videos',f)).join('')}${fd('styles').folders.map(f=>frow('styles',f)).join('')}${nf}</div></div>
     <div class="sb-sp"></div>
-    ${ji?`<button class="sb-job" onclick="${askAbout()?'askOpen()':ji.go}"><div class="tp"><b>${SPIN}${esc(ji.label)}</b><span class="row" style="gap:8px;flex-shrink:0">${ji.since?`<span data-since="${ji.since}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-ji.since)))}</span>`:''}${ji.id?`<span class="sb-stop" role="button" tabindex="0" title="Stop Claude on this" onclick="event.stopPropagation();stopJob(${J(ji.id)})" onkeydown="if(event.key==='Enter'){event.stopPropagation();stopJob(${J(ji.id)})}">Stop</span>`:''}</span></div><div class="tx">${askAbout()?`Claude is asking about ${esc(askAbout())}: <u>Open</u>`:esc(ji.text)}</div><div class="trk ${ji.frac==null?'indet':''}"><i style="width:${Math.round((ji.frac||0)*100)}%"></i></div></button>`:''}
+    ${ji?`<button class="sb-job" onclick="${askAbout()?'askOpen()':ji.go}"><div class="tp"><b>${SPIN}${esc(ji.label)}</b><span class="row" style="gap:8px;flex-shrink:0">${ji.since?`<span data-since="${ji.since}" data-f="t">${fmtT(Math.max(0,Math.round(Date.now()/1000-ji.since)))}</span>`:''}${ji.id?`<span class="sb-stop" role="button" tabindex="0" title="Stop AI on this" onclick="event.stopPropagation();stopJob(${J(ji.id)})" onkeydown="if(event.key==='Enter'){event.stopPropagation();stopJob(${J(ji.id)})}">Stop</span>`:''}</span></div><div class="tx">${askAbout()?`AI is asking about ${esc(askAbout())}: <u>Open</u>`:esc(ji.text)}</div><div class="trk ${ji.frac==null?'indet':''}"><i style="width:${Math.round((ji.frac||0)*100)}%"></i></div></button>`:''}
     ${rail?'':updCard()}
     ${gsBlock()}
     <div class="sb-bot"><button class="sb-row ${cur==='settings'?'on':''}" onclick="rgo('settings')" ${upd?'title="A new version is out"':''}>${ic('gear')}<span class="lb">Settings</span>${upd?'<span class="sdot"></span>':''}</button>${thm}</div>`;
@@ -2216,7 +2216,7 @@ function sideHTML(){
 const askAbout=()=>{const q=window.askq;return q&&q.elsewhere?q.about||'your video':null};
 // one row per open question (QA round 4: two videos asked at once, Home showed one row)
 const askRows=()=>{const q=window.askq;return q?(q.all&&q.all.length?q.all:[q]).filter(x=>x.elsewhere):[]};
-function askRow(){return askRows().map(x=>`<div class="askrow"><span>Claude is asking about <b>${esc(x.about||'your video')}</b></span><button class="b1 s" onclick="askOpen(${esc(JSON.stringify(x.id||''))})">Open</button></div>`).join('')}
+function askRow(){return askRows().map(x=>`<div class="askrow"><span>AI is asking about <b>${esc(x.about||'your video')}</b></span><button class="b1 s" onclick="askOpen(${esc(JSON.stringify(x.id||''))})">Open</button></div>`).join('')}
 addEventListener('askchange',()=>{if(S)render()});
 function paintSide(){
   if(!S)return;const rail=isRail();document.body.classList.toggle('rail',rail);document.body.style.setProperty('--sw',(rail?80:232)+'px');
@@ -2330,14 +2330,14 @@ function stUpdate(){
   const st=!j?'':busy?`${(j.steps.at(-1)||{}).text||'Updating'}...`:j.state==='done'?`Updated to ${jr.version||u.installed}.`:j.state==='failed'?j.error:'';
   // Claude sessions keep the version they loaded until /reload-plugins: u.claude is the version their last command ran
   const old=u.claude&&u.installed&&u.claude!==u.installed,recent=j&&j.state==='done'&&Date.now()/1000-(j.finished||0)<86400;
-  const rl=old||recent&&!u.claude?`<div style="display:flex;flex-direction:column;gap:8px"><div class="t2" style="white-space:normal">Claude sessions that are open still run ${old?esc(u.claude):'the old version'}. Type this in each one:</div><span class="codebox"><span>/reload-plugins</span><button class="hlink" onclick="copyText('/reload-plugins',this)">Copy</button></span></div>`
-    :recent&&u.claude===u.installed?`<div class="t2">Claude is on ${esc(u.installed)} too.</div>`:'';
+  const rl=old||recent&&!u.claude?`<div style="display:flex;flex-direction:column;gap:8px"><div class="t2" style="white-space:normal">Active sessions still run ${old?esc(u.claude):'the old version'}. Reload to update:</div><span class="codebox"><span>/reload-plugins</span><button class="hlink" onclick="copyText('/reload-plugins',this)">Copy</button></span></div>`
+    :recent&&u.claude===u.installed?`<div class="t2">AI is on ${esc(u.installed)} too.</div>`:'';
   const line=u.checking?'Checking...':u.newer?'A new version is out':u.latest?'Up to date':u.checked?'Could not reach GitHub':'';
   return `<div class="scd"><div class="hd"><b>Updates</b><span class="ss">${ok?OKTICK:''}${line}</span></div>
     <div class="kvs"><div><span>Installed</span><b>${esc(u.installed||'?')}</b></div><div><span>Latest</span><b>${esc(u.latest||'?')}</b></div></div>
     ${u.dev?'':'<div class="t2" style="white-space:normal">Turn on auto-updates: type <b>/plugin</b>, open Marketplaces, pick nextwork, choose Enable auto-update.</div>'}
     ${u.newer&&(u.notes||[]).length?`<div><div class="t2">What changed</div>${u.notes.map(n=>`<div class="dash">${esc(n)}</div>`).join('')}</div>`:''}
-    ${u.fork?'<div class="t2" style="white-space:normal">Your own copy (a fork): ask Claude Code to update my editor.</div>':''}
+    ${u.fork?'<div class="t2" style="white-space:normal">Your own copy (a fork): pull changes to update.</div>':''}
     <div class="lks">${u.newer&&!u.fork?`<button class="b1 s" ${busy?'disabled':''} onclick="stDoUpdate()">${busy?'Updating...':'Update'}</button>`:`<button class="b2 s" ${u.checking?'disabled':''} onclick="stCheckUpd()">Check now</button>`}<a href="https://github.com/nextwork-projects/ai-video-editor-cooked/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Full changelog</a></div>
     ${st?`<div class="msg ${j.state==='failed'?'bad':''}">${esc(st)}</div>`:''}${rl}</div>`;
 }
@@ -2345,7 +2345,7 @@ function stUpdate(){
 function updCard(){
   const u=S.update||{},j=latest('update'),busy=j&&j.state==='taken',done=j&&j.state==='done'&&Date.now()/1000-(j.finished||0)<300;
   if(busy)return `<div class="sb-upd"><div><b>${SPIN}Updating MEMASAK</b><span>${esc(((j.steps||[]).at(-1)||{}).text||'Starting')}</span></div></div>`;
-  if(done)return `<div class="sb-upd"><div><b>Updated${(j.result||{}).version?' to '+esc(j.result.version):''}</b><span>Type /reload-plugins in Claude Code to load it.</span></div></div>`;
+  if(done)return `<div class="sb-upd"><div><b>Updated${(j.result||{}).version?' to '+esc(j.result.version):''}</b><span>Restart or reload to load it.</span></div></div>`;
   if(!u.newer||u.fork)return '';
   return `<div class="sb-upd"><div><b>New version ${esc(u.latest)}</b><span>${esc((u.notes||[])[0]||'A new version of MEMASAK is out.')}</span></div><button class="sb-updb" onclick="stDoUpdate()">Update now</button></div>`;
 }
@@ -2462,8 +2462,8 @@ function vSettings(){
 // Alerts: the chime (this browser only) and system notices while the tab is hidden; permission only from the button
 function stAlerts(){
   const A=window.aveAlert,N=window.Notification?Notification.permission:'none';
-  const line={granted:'On. Shown when Claude asks or a draft is ready and this tab is hidden.',denied:'Blocked. Allow notifications for this page in your browser.',none:'This browser cannot show them.'}[N]||'A notice when Claude asks or a draft is ready and this tab is hidden.';
-  return `<div class="scd" id="st-alerts"><label class="srow" style="cursor:pointer"><div><div>Sound when Claude asks or finishes</div><div class="t2">A soft chime</div></div><input type="checkbox" class="st-check" ${!A||A.soundOn()?'checked':''} onchange="aveAlert.setSound(this.checked)"></label>
+  const line={granted:'On. Shown when the AI asks or a draft is ready and this tab is hidden.',denied:'Blocked. Allow notifications for this page in your browser.',none:'This browser cannot show them.'}[N]||'A notice when the AI asks or a draft is ready and this tab is hidden.';
+  return `<div class="scd" id="st-alerts"><label class="srow" style="cursor:pointer"><div><div>Sound when AI asks or finishes</div><div class="t2">A soft chime</div></div><input type="checkbox" class="st-check" ${!A||A.soundOn()?'checked':''} onchange="aveAlert.setSound(this.checked)"></label>
     <div class="srow"><div style="min-width:0"><div>Alerts</div><div class="t2" style="white-space:normal">${line}</div></div>${N==='default'?'<button class="b2 s" onclick="Notification.requestPermission().then(()=>render())">Turn on alerts</button>':''}</div></div>`;
 }
 // Tools on this computer: Check runs setup.py doctor here (POST /recheck) and lists what it found, in place

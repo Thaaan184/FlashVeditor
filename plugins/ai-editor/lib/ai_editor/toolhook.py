@@ -105,8 +105,8 @@ def ended_on_question(payload):
     if not sid or "?" not in tail or not ours(payload, sid):
         return None
     q = [x.strip() for x in tail.replace("\n", " ").split("?")[:-1] if x.strip()]
-    q = q[-1].split(". ")[-1].split(": ")[-1] + "?" if q else "Claude asked you something."
-    return askhook.say_terminal(sid, "Claude asked: " + q)
+    q = q[-1].split(". ")[-1].split(": ")[-1] + "?" if q else "AI asked you something."
+    return askhook.say_terminal(sid, "AI asked: " + q)
 
 
 def clear(sid):
@@ -200,7 +200,7 @@ def demo():
     tr.write_text("\n".join(json.dumps({"message": {"role": "assistant", "content": [{"type": "text", "text": t}]}})
                             for t in ("Working.", "The cut is ready. Should I keep the long pause at 0:42?")), encoding="utf-8")
     assert ended_on_question({"session_id": "s3", "transcript_path": str(tr)})
-    assert json.loads(terminal_file().read_text(encoding="utf-8"))["message"] == "Claude asked: Should I keep the long pause at 0:42?"
+    assert json.loads(terminal_file().read_text(encoding="utf-8"))["message"] == "AI asked: Should I keep the long pause at 0:42?"
     clear("s3")
     tr.write_text(json.dumps({"message": {"role": "assistant", "content": [{"type": "text", "text": "Done. Rendered."}]}}), encoding="utf-8")
     assert ended_on_question({"session_id": "s3", "transcript_path": str(tr)}) is None and not terminal_file().exists()

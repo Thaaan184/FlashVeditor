@@ -189,7 +189,7 @@ const App: React.FC = () => {
         <button className="primary" onClick={async () => {
           const r = await fetch("/api/done", { method: "POST", body: "{}" });
           const j = await r.json();
-          setDone(`${j.changes} change${j.changes === 1 ? "" : "s"} saved. Claude picks up preview-done.json and asks where to render. You can close this tab.`);
+          setDone(`${j.changes} change${j.changes === 1 ? "" : "s"} saved. The AI picks up preview-done.json and continues the render. You can close this tab.`);
         }}>Render</button>
       </header>
 

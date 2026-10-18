@@ -57,15 +57,15 @@ const el=document.createElement('div');el.id='askq';el.setAttribute('role','dial
 el.addEventListener('keydown',e=>{if(e.key==='Escape'&&A){e.preventDefault();fold()}e.stopPropagation()});   // the page's own shortcuts stay off while typing here
 document.body.appendChild(el);
 // Esc folds the card into a bar that reopens it: the question is never lost
-const bar=document.createElement('button');bar.id='askbar';bar.type='button';bar.innerHTML='<i></i>Claude is asking you something<span>Open</span>';
+const bar=document.createElement('button');bar.id='askbar';bar.type='button';bar.innerHTML='<i></i>AI is asking you something<span>Open</span>';
 const term=document.createElement('div');term.id='askterm';term.setAttribute('role','status');document.body.appendChild(term);
-// Claude waits in a Terminal window (a permission prompt, a question no page took): say so on every page, chime once
+// AI waits in a Terminal window (a permission prompt, a question no page took): say so on every page, chime once
 let TT=null;
 function terminal(t){
   if(!t){if(TT){term.classList.remove('on');if(document.title===TT)document.title=title0;TT=null}return}
-  term.innerHTML=`<i></i><div><b>Claude needs you in the Terminal window</b><span>${esc(t.message||'Go back to Claude Code to answer it.')}</span></div>`;term.classList.add('on');
+  term.innerHTML=`<i></i><div><b>AI needs your input</b><span>${esc(t.message||'Go to the terminal to answer it.')}</span></div>`;term.classList.add('on');
   if(!A&&document.title!==TITLE&&document.title!=='(1) Go to the Terminal'){title0=document.title;document.title=TT='(1) Go to the Terminal'}
-  if(askedNow('t'+t.at))alert1('Claude needs you in the Terminal',t.message||'');
+  if(askedNow('t'+t.at))alert1('AI needs your input',t.message||'');
 }
 let title0=document.title;
 bar.onclick=()=>{bar.classList.remove('on');el.classList.add('on');el.querySelector('button,input')?.focus()};document.body.appendChild(bar);
@@ -95,7 +95,7 @@ el.addEventListener('paste',e=>{const fs=[...(e.clipboardData?.files||[])];if(A&
 el.addEventListener('dragover',e=>{if(!A)return;e.preventDefault();el.querySelector('.aq-card')?.classList.add('aq-drag')});
 el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.querySelector('.aq-card')?.classList.remove('aq-drag')});
 el.addEventListener('drop',e=>{if(!A)return;e.preventDefault();el.querySelector('.aq-card')?.classList.remove('aq-drag');addFiles(e.dataTransfer.files)});
-const TITLE='(1) Claude is asking';   // a background tab shows it in its title
+const TITLE='(1) AI is asking';   // a background tab shows it in its title
 // a soft two-note chime made here (no audio file); Settings turns it off (localStorage, this browser only)
 function chime(){try{const c=new AudioContext();[[660,0],[880,.14]].forEach(([f,t])=>{const o=c.createOscillator(),g=c.createGain(),at=c.currentTime+t;o.frequency.value=f;g.gain.setValueAtTime(.0001,at);
   g.gain.exponentialRampToValueAtTime(.05,at+.02);g.gain.exponentialRampToValueAtTime(.0001,at+.4);o.connect(g).connect(c.destination);o.start(at);o.stop(at+.45)});setTimeout(()=>c.close(),900)}catch(e){}}
@@ -111,17 +111,17 @@ function close(msg){
   if(msg){el.innerHTML=`<div class="aq-card"><div class="aq-done">${esc(msg)}</div></div>`;setTimeout(()=>{if(!A)el.classList.remove('on')},1400)}else el.classList.remove('on');
   A=null;bar.classList.remove('on');flag(false);if(title!==null&&document.title===TITLE)document.title=title;title=null}
 function next(v){ans[i]=v;imgs[i]=pics;pics=[];i++;sel=new Set();el.innerHTML='';if(i<A.questions.length)return draw();
-  send(imgs.some(m=>m.length)?{answers:ans,images:imgs}:{answers:ans});close('Sent. Claude has your answer.')}
+  send(imgs.some(m=>m.length)?{answers:ans,images:imgs}:{answers:ans});close('Sent. AI has your answer.')}
 function draw(){
   const q=A.questions[i],n=A.questions.length,multi=!!q.multiSelect,opts=Array.isArray(q.options)?q.options:[];
   const own=el.querySelector('#asko')?.value||'';
-  el.innerHTML=`<div class="aq-card"><div class="aq-top"><span>${A.about?`Claude (${esc(A.about)}) asks`:'Claude has a question'}</span><span>${n>1?`Question ${i+1} of ${n}`:''}</span></div>
+  el.innerHTML=`<div class="aq-card"><div class="aq-top"><span>${A.about?`AI (${esc(A.about)}) asks`:'AI has a question'}</span><span>${n>1?`Question ${i+1} of ${n}`:''}</span></div>
   ${q.header?`<div class="aq-hd">${esc(q.header)}</div>`:''}<h2${q.header?'':' style="margin-top:14px"'}>${esc(q.question)}</h2>
   <div class="aq-opts">${opts.map((o,k)=>`<button class="aq-opt${sel.has(k)?' aq-sel':''}" data-k="${k}"${multi?` aria-pressed="${sel.has(k)}"`:''}>${multi?`<i class="aq-box">${sel.has(k)?TICK:''}</i>`:''}<div><b>${esc(o.label)}</b>${o.description?`<span>${esc(o.description)}</span>`:''}</div></button>`).join('')}</div>
   <div class="aq-other"><input id="asko" placeholder="${multi?'Other: add your own words':'Other: type your own answer'}" aria-label="Other answer"><button class="aq-clip" id="askp" aria-label="attach an image" title="attach an image (or paste or drop one)">${CLIP}</button><input type="file" id="aski" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>${multi?'':'<button class="aq-send" id="asks" disabled>Send answer</button>'}</div>
   <div class="aq-pics"></div>
   ${multi?'<button class="aq-send aq-wide" id="asks" disabled>Send answer</button>':''}
-  <div class="aq-foot"><button class="aq-term" id="askt">Answer in Claude Code instead</button></div></div>`;
+  <div class="aq-foot"><button class="aq-term" id="askt">Answer in Terminal instead</button></div></div>`;
   const $o=el.querySelector('#asko'),$s=el.querySelector('#asks');
   $o.value=own;
   const value=()=>multi?[...sel].sort((a,b)=>a-b).map(k=>opts[k].label).concat($o.value.trim()?[$o.value.trim()]:[]).join(', '):$o.value.trim();
@@ -134,7 +134,7 @@ function draw(){
   $o.oninput=ready;
   $o.onkeydown=e=>{if(e.key==='Enter'&&!$s.disabled)$s.click()};
   $s.onclick=()=>{if(value()||pics.length)next(value())};
-  el.querySelector('#askt').onclick=()=>{send({terminal:true});close('Answer it in Claude Code.')};
+  el.querySelector('#askt').onclick=()=>{send({terminal:true});close('Answer it in Terminal.')};
   if(!bar.classList.contains('on')&&!(A.elsewhere&&!el.classList.contains('on')))el.classList.add('on');
 }
 async function poll(){
