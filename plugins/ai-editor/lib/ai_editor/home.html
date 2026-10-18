@@ -2345,63 +2345,81 @@ function stLook(){
 }
 
 function stGateway(){
-  const gw=(S&&S.gateway)||{provider:'9router',gemini_model:'ag/gemini-3.8-flash-high',gemini_url:'http://100.96.207.8:20128/v1',gemini_key:''};
-  const cur=ui.gw_provider||gw.provider||'9router';
+  const gw=(S&&S.gateway)||{provider:'9router',gemini_model:'ag/gemini-3.8-flash-high',gemini_url:'http://100.96.207.8:20128/v1',gemini_key:'',active_combo:'high-speed',available_models:[]};
+  const curCombo=ui.gw_combo||gw.active_combo||'high-speed';
+  const models=(gw.available_models&&gw.available_models.length)?gw.available_models:[
+    'ag/gemini-3.8-flash-high',
+    'ag/claude-sonnet-4-6',
+    'ag/claude-opus-4-6-thinking',
+    'ag/gemini-3.8-flash-medium',
+    'ag/gemini-3.8-flash-low',
+    'ag/gemini-pro-agent',
+    'Hermes'
+  ];
+  const curModel=ui.gw_model||gw.gemini_model||'ag/gemini-3.8-flash-high';
+
   return `<div class="scd" style="gap:14px">
-    <div class="hd"><div class="row" style="gap:8px"><b>AI Gateway Connection</b><span class="schip okc" style="color:var(--oktext);background:var(--tile);border:1px solid var(--ok);font-size:12px;padding:2px 8px;border-radius:12px">● Active: ${esc(gw.provider)}</span></div></div>
-    <div class="t2" style="white-space:normal">Pilih koneksi AI Gateway untuk analisis visual & pembuatan video:</div>
-    <div class="seg3" style="width:100%">${[
-      ['9router','9Router Gateway'],
-      ['anthropic','Claude Direct'],
-      ['custom','Custom LLM']
-    ].map(([id,label])=>`<button class="${cur===id?'on':''}" style="font-size:12px" onclick="ui.gw_provider='${id}';render()">${label}</button>`).join('')}</div>
-    ${cur==='9router'?`
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="t2">9Router Base URL:</div>
-        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_url||gw.gemini_url||'http://100.96.207.8:20128/v1')}">
-        <div class="t2">9Router API Key:</div>
-        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_key||gw.gemini_key||'')}" placeholder="sk-...">
-        <div class="t2">Active Model (Antigravity):</div>
-        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_model||gw.gemini_model||'ag/gemini-3.8-flash-high')}">
-        <div class="t2" style="font-size:12px;color:var(--t3)">⚡ Menggunakan gateway 9Router dengan Gemini 3.8 Flash High. Didukung autentikasi Bearer / sk- key.</div>
+    <div class="hd"><div class="row" style="gap:8px"><b>9Router Dedicated Gateway</b><span class="schip okc" style="color:var(--oktext);background:var(--tile);border:1px solid var(--ok);font-size:12px;padding:2px 8px;border-radius:12px">● Dedicated Antigravity</span></div></div>
+    <div class="t2" style="white-space:normal">Versi ini dikonfigurasi khusus untuk 9Router. Model otomatis menyesuaikan combo aktif:</div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="t2" style="font-weight:600">Pilih Model Combo Aktif:</div>
+      <div class="seg3" style="width:100%">${[
+        ['high-speed','⚡ High-Speed Studio'],
+        ['creative-opus','🧠 Creative Opus'],
+        ['balanced-flash','⚖️ Balanced Flash'],
+        ['hermes-local','🏠 Hermes Local']
+      ].map(([id,label])=>`<button class="${curCombo===id?'on':''}" style="font-size:11px;padding:6px 4px" onclick="setCombo('${id}')">${label}</button>`).join('')}</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="t2" style="font-weight:600">Model Visual / Planner:</div>
+        <span class="t2" style="font-size:11px;color:var(--ok)">Live dari 9Router</span>
       </div>
-    `:cur==='anthropic'?`
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="t2">Anthropic Endpoint:</div>
-        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="https://api.anthropic.com">
-        <div class="t2">Anthropic API Key:</div>
-        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="sk-ant-api...">
-        <div class="t2">Anthropic Model:</div>
-        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="claude-3-7-sonnet-20250219">
+      <select id="gw_model_select" class="input" style="height:36px;font-family:var(--mono);font-size:13px" onchange="ui.gw_model=this.value;render()">
+        ${models.map(m=>`<option value="${esc(m)}" ${m===curModel?'selected':''}>${esc(m)}</option>`).join('')}
+      </select>
+
+      <div class="t2">9Router Base URL:</div>
+      <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_url||gw.gemini_url||'http://100.96.207.8:20128/v1')}">
+
+      <div class="t2">9Router API Key (sk-...):</div>
+      <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" value="${esc(ui.gw_key||gw.gemini_key||'')}" placeholder="sk-...">
+
+      <div class="row" style="background:var(--tile);padding:10px 14px;border-radius:8px;font-size:12px;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div><b>Visual/Video:</b> <span style="color:var(--accent)">${esc(curModel)}</span></div>
+        <div><b>Agent/Edit:</b> <span style="color:var(--accent)">${curCombo==='creative-opus'?'ag/claude-opus-4-6-thinking':curCombo==='balanced-flash'?'ag/gemini-3.8-flash-high':curCombo==='hermes-local'?'Hermes':'ag/claude-sonnet-4-6'}</span></div>
       </div>
-    `:`
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="t2">Gateway URL:</div>
-        <input id="gw_url" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="http://localhost:8000/v1">
-        <div class="t2">API Key:</div>
-        <input id="gw_key" type="password" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="Bearer token">
-        <div class="t2">Model Name:</div>
-        <input id="gw_model" class="input" style="height:36px;font-family:var(--mono);font-size:13px" placeholder="my-model">
-      </div>
-    `}
+    </div>
+
     <div class="row" style="gap:10px;justify-content:flex-end">
-      <button class="b1 s" onclick="saveGateway()">${ui.gw_saving?'Saving...':'Simpan & Hubungkan'}</button>
+      <button class="b1 s" onclick="saveGateway()">${ui.gw_saving?'Menghubungkan...':'Simpan & Sinkronkan Combo'}</button>
     </div>
     ${ui.gw_msg?`<div class="msg ${ui.gw_ok?'good':'bad'}"><span>${esc(ui.gw_msg)}</span></div>`:''}
   </div>`;
 }
 
+function setCombo(c){
+  ui.gw_combo=c;
+  if(c==='high-speed')ui.gw_model='ag/gemini-3.8-flash-high';
+  else if(c==='creative-opus')ui.gw_model='ag/gemini-3.8-flash-high';
+  else if(c==='balanced-flash')ui.gw_model='ag/gemini-3.8-flash-medium';
+  else if(c==='hermes-local')ui.gw_model='Hermes';
+  render();
+}
+
 async function saveGateway(){
-  const p=ui.gw_provider||'9router';
+  const combo=ui.gw_combo||'high-speed';
   const url=($('#gw_url')||{}).value;
-  const mod=($('#gw_model')||{}).value;
+  const mod=($('#gw_model_select')||{}).value||ui.gw_model;
   const key=($('#gw_key')||{}).value;
   ui.gw_saving=true;render();
   try{
-    const r=await post('/gateway',{provider:p,gemini_url:url,gemini_model:mod,gemini_key:key,anthropic_url:url,anthropic_token:key});
+    const r=await post('/gateway',{combo:combo,gemini_url:url,gemini_model:mod,gemini_key:key});
     ui.gw_saving=false;
     ui.gw_ok=r.ok;
-    ui.gw_msg=r.ok?'Gateway connection updated & saved!':(r.error||'Gagal memperbarui gateway.');
+    ui.gw_msg=r.ok?'Combo 9Router berhasil disimpan & disinkronkan!':(r.error||'Gagal menyimpan.');
     await load();
   }catch(e){
     ui.gw_saving=false;ui.gw_ok=false;ui.gw_msg=e.message;

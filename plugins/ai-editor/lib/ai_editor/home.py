@@ -1158,6 +1158,44 @@ def fetch_latest():
     return v, notes
 
 
+_MODELS_CACHE = {"ts": 0, "models": []}
+
+
+def fetch_9router_models():
+    now = time.time()
+    if _MODELS_CACHE["models"] and now - _MODELS_CACHE["ts"] < 60:
+        return _MODELS_CACHE["models"]
+    base_url = os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1")
+    if base_url.endswith("/v1") or base_url.endswith("/v1/"):
+        url = base_url.rstrip("/") + "/models"
+    else:
+        url = base_url.rstrip("/") + "/v1/models"
+    key = os.environ.get("GEMINI_API_KEY", "")
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            models = sorted([m["id"] for m in data.get("data", [])])
+            if models:
+                _MODELS_CACHE["ts"] = now
+                _MODELS_CACHE["models"] = models
+                return models
+    except Exception:
+        pass
+    if _MODELS_CACHE["models"]:
+        return _MODELS_CACHE["models"]
+    return [
+        "ag/gemini-3.8-flash-high",
+        "ag/claude-sonnet-4-6",
+        "ag/claude-opus-4-6-thinking",
+        "ag/gemini-3.8-flash-medium",
+        "ag/gemini-3.8-flash-low",
+        "ag/gemini-3.7-flash-high",
+        "ag/gemini-pro-agent",
+        "Hermes"
+    ]
+
+
 def my_version():
     """This copy's plugin.json version, or None. A Claude session's commands run the copy it loaded, so after an
     update this says whether that session has typed /reload-plugins yet."""
@@ -2149,13 +2187,18 @@ def make_handler(token):
                         td["format"] = None
                 return self.send(200, d)
             if path == "/gateway":
+                models = fetch_9router_models()
                 return self.send(200, {
-                    "active_provider": os.environ.get("AI_GATEWAY_PROVIDER", "9router"),
+                    "active_provider": "9router",
                     "gemini_url": os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "gemini_model": os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high"),
                     "gemini_key": os.environ.get("GEMINI_API_KEY", ""),
                     "anthropic_url": os.environ.get("ANTHROPIC_BASE_URL", "http://100.96.207.8:20128/v1"),
                     "anthropic_model": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
+                    "anthropic_sonnet": os.environ.get("ANTHROPIC_DEFAULT_SONNET_MODEL", "ag/claude-sonnet-4-6"),
+                    "anthropic_opus": os.environ.get("ANTHROPIC_DEFAULT_OPUS_MODEL", "ag/claude-opus-4-6-thinking"),
+                    "available_models": models,
+                    "active_combo": os.environ.get("AI_ACTIVE_COMBO", "high-speed")
                 })
             q = parse_qs(urlsplit(self.path).query)
             if path == "/library":
@@ -2327,19 +2370,50 @@ def make_handler(token):
                     return self.send(400, {"error": "light, dark or system"})
                 return self.send(200, {"theme": theme()})
             if path == "/gateway":
-                provider = body.get("provider", "9router")
-                os.environ["AI_GATEWAY_PROVIDER"] = provider
-                if "gemini_url" in body and body["gemini_url"]:
-                    os.environ["GEMINI_BASE_URL"] = body["gemini_url"]
+                combo = body.get("combo")
+                if combo == "high-speed":
+                    os.environ["GEMINI_MODEL"] = "ag/gemini-3.8-flash-high"
+                    os.environ["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = "ag/gemini-3.8-flash-high"
+                    os.environ["ANTHROPIC_DEFAULT_SONNET_MODEL"] = "ag/claude-sonnet-4-6"
+                    os.environ["ANTHROPIC_DEFAULT_OPUS_MODEL"] = "ag/claude-opus-4-6-thinking"
+                    os.environ["ANTHROPIC_MODEL"] = "ag/claude-sonnet-4-6"
+                elif combo == "creative-opus":
+                    os.environ["GEMINI_MODEL"] = "ag/gemini-3.8-flash-high"
+                    os.environ["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = "ag/gemini-3.8-flash-high"
+                    os.environ["ANTHROPIC_DEFAULT_SONNET_MODEL"] = "ag/claude-opus-4-6-thinking"
+                    os.environ["ANTHROPIC_DEFAULT_OPUS_MODEL"] = "ag/claude-opus-4-6-thinking"
+                    os.environ["ANTHROPIC_MODEL"] = "ag/claude-opus-4-6-thinking"
+                elif combo == "balanced-flash":
+                    os.environ["GEMINI_MODEL"] = "ag/gemini-3.8-flash-medium"
+                    os.environ["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = "ag/gemini-3.8-flash-low"
+                    os.environ["ANTHROPIC_DEFAULT_SONNET_MODEL"] = "ag/gemini-3.8-flash-high"
+                    os.environ["ANTHROPIC_DEFAULT_OPUS_MODEL"] = "ag/gemini-pro-agent"
+                    os.environ["ANTHROPIC_MODEL"] = "ag/gemini-3.8-flash-high"
+                elif combo == "hermes-local":
+                    os.environ["GEMINI_MODEL"] = "Hermes"
+                    os.environ["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = "Hermes"
+                    os.environ["ANTHROPIC_DEFAULT_SONNET_MODEL"] = "Hermes"
+                    os.environ["ANTHROPIC_DEFAULT_OPUS_MODEL"] = "Hermes"
+                    os.environ["ANTHROPIC_MODEL"] = "Hermes"
+
                 if "gemini_model" in body and body["gemini_model"]:
                     os.environ["GEMINI_MODEL"] = body["gemini_model"]
+                    os.environ["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = body["gemini_model"]
+                if "anthropic_sonnet" in body and body["anthropic_sonnet"]:
+                    os.environ["ANTHROPIC_DEFAULT_SONNET_MODEL"] = body["anthropic_sonnet"]
+                    os.environ["ANTHROPIC_MODEL"] = body["anthropic_sonnet"]
+                if "anthropic_opus" in body and body["anthropic_opus"]:
+                    os.environ["ANTHROPIC_DEFAULT_OPUS_MODEL"] = body["anthropic_opus"]
+
+                if "gemini_url" in body and body["gemini_url"]:
+                    os.environ["GEMINI_BASE_URL"] = body["gemini_url"]
+                    os.environ["ANTHROPIC_BASE_URL"] = body["gemini_url"]
                 if "gemini_key" in body and body["gemini_key"]:
                     os.environ["GEMINI_API_KEY"] = body["gemini_key"]
                     os.environ["ANTHROPIC_AUTH_TOKEN"] = body["gemini_key"]
-                if "anthropic_url" in body and body["anthropic_url"]:
-                    os.environ["ANTHROPIC_BASE_URL"] = body["anthropic_url"]
-                if "anthropic_token" in body and body["anthropic_token"]:
-                    os.environ["ANTHROPIC_AUTH_TOKEN"] = body["anthropic_token"]
+
+                if combo:
+                    os.environ["AI_ACTIVE_COMBO"] = combo
 
                 targets = [Path.home() / ".config" / "creator-teardown" / ".env"]
                 try:
@@ -2350,19 +2424,50 @@ def make_handler(token):
                     try:
                         cfg.parent.mkdir(parents=True, exist_ok=True)
                         lines = [
-                            f"AI_GATEWAY_PROVIDER={os.environ.get('AI_GATEWAY_PROVIDER', '9router')}",
+                            f"AI_GATEWAY_PROVIDER=9router",
+                            f"AI_ACTIVE_COMBO={os.environ.get('AI_ACTIVE_COMBO', 'high-speed')}",
                             f"GEMINI_BASE_URL={os.environ.get('GEMINI_BASE_URL', '')}",
                             f"GEMINI_MODEL={os.environ.get('GEMINI_MODEL', '')}",
                             f"GEMINI_FRAME_SAMPLING={os.environ.get('GEMINI_FRAME_SAMPLING', '1')}",
                             f"GEMINI_API_KEY={os.environ.get('GEMINI_API_KEY', '')}",
+                            f"GEMINI_AUTH_MODE=bearer",
                             f"ANTHROPIC_BASE_URL={os.environ.get('ANTHROPIC_BASE_URL', '')}",
                             f"ANTHROPIC_AUTH_TOKEN={os.environ.get('ANTHROPIC_AUTH_TOKEN', '')}",
+                            f"ANTHROPIC_DEFAULT_HAIKU_MODEL={os.environ.get('ANTHROPIC_DEFAULT_HAIKU_MODEL', '')}",
+                            f"ANTHROPIC_DEFAULT_SONNET_MODEL={os.environ.get('ANTHROPIC_DEFAULT_SONNET_MODEL', '')}",
+                            f"ANTHROPIC_DEFAULT_OPUS_MODEL={os.environ.get('ANTHROPIC_DEFAULT_OPUS_MODEL', '')}",
                         ]
                         cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
                         cfg.chmod(0o600)
                     except OSError:
                         pass
-                return self.send(200, {"ok": True, "provider": provider, "model": os.environ.get("GEMINI_MODEL")})
+
+                claude_targets = [Path.home() / ".claude" / "settings.local.json", Path("/app/.claude/settings.local.json")]
+                for cs in claude_targets:
+                    try:
+                        cs.parent.mkdir(parents=True, exist_ok=True)
+                        c_data = {
+                            "env": {
+                                "ANTHROPIC_BASE_URL": os.environ.get("ANTHROPIC_BASE_URL", ""),
+                                "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_AUTH_TOKEN", ""),
+                                "ANTHROPIC_AUTH_TOKEN": os.environ.get("ANTHROPIC_AUTH_TOKEN", ""),
+                                "ANTHROPIC_DEFAULT_HAIKU_MODEL": os.environ.get("ANTHROPIC_DEFAULT_HAIKU_MODEL", "ag/gemini-3.8-flash-high"),
+                                "ANTHROPIC_DEFAULT_SONNET_MODEL": os.environ.get("ANTHROPIC_DEFAULT_SONNET_MODEL", "ag/claude-sonnet-4-6"),
+                                "ANTHROPIC_DEFAULT_OPUS_MODEL": os.environ.get("ANTHROPIC_DEFAULT_OPUS_MODEL", "ag/claude-opus-4-6-thinking"),
+                                "ANTHROPIC_MODEL": os.environ.get("ANTHROPIC_DEFAULT_SONNET_MODEL", "ag/claude-sonnet-4-6")
+                            }
+                        }
+                        cs.write_text(json.dumps(c_data, indent=2), encoding="utf-8")
+                    except OSError:
+                        pass
+
+                return self.send(200, {
+                    "ok": True,
+                    "provider": "9router",
+                    "combo": os.environ.get("AI_ACTIVE_COMBO", "high-speed"),
+                    "model": os.environ.get("GEMINI_MODEL"),
+                    "available_models": fetch_9router_models()
+                })
             if path == "/key":
                 name, val = body.get("name"), str(body.get("value") or "").strip()
                 if name not in KEY_NAMES or not val or len(val) > 400 or re.search(r"\s", val):
