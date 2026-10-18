@@ -6,6 +6,7 @@ import { SplitText, pickMotion, useTl } from "./motion";
 import { footageX } from "./Scene";
 import { ProductVideo, ProductPlan, productMeta } from "./product/ProductVideo";
 import { CinematicStory, CinematicStoryProps } from "./CinematicStory";
+import { CinematicBeachVlog, CinematicBeachVlogProps } from "./CinematicBeachVlog";
 
 // Real values come from plan.json via --props; these only let the studio open.
 const empty: Plan = {
@@ -93,6 +94,15 @@ export const Root: React.FC = () => (
       height={1920}
       fps={30}
       durationInFrames={910}
+    />
+    <Composition
+      id="CinematicBeachVlog"
+      component={CinematicBeachVlog}
+      defaultProps={{ sourceVideo: "beach_source.mp4", enableBgm: true, enableSfx: true } as CinematicBeachVlogProps}
+      width={1080}
+      height={1920}
+      fps={30}
+      durationInFrames={390}
     />
     <Composition id="Preview" component={Preview} calculateMetadata={previewMeta} width={1080} height={1920} fps={30} durationInFrames={90}
       defaultProps={{ width: 1080, height: 1920, dur: 3, card: { anim: { type: "logo_sting", props: { src: "images/logo.svg" } }, start: 0, end: 3, entrance: "pop",
