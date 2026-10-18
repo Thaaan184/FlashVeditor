@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import askhook  # noqa: E402
 
 STOP_S = 120
-REASON = ("The user pressed Stop in the cooked. window. Stop now: run nothing else. Say in one line what was left "
+REASON = ("The user pressed Stop in the FlashVeditor window. Stop now: run nothing else. Say in one line what was left "
           "unfinished, then wait for the user to type in this Terminal.")
 
 
