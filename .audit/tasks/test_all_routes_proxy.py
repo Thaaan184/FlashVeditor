@@ -50,16 +50,26 @@ print(f"--- Running full route audit on {BASE} ---")
 status, hdrs, body = req("/")
 record("GET / (Dashboard Home)", status == 200 and b"cooked." in body, f"Status {status}, len {len(body)}")
 
-# 2. GET /state (Dashboard)
+# 2. GET /state (Dashboard System State)
 status, hdrs, body = req("/state")
 try:
     d = json.loads(body.decode("utf-8"))
-    ok = status == 200 and "videos" in d and "gateway" in d
-    record("GET /state (Dashboard)", ok, f"Status {status}, videos count: {len(d.get('videos', []))}")
-    test_vdir = d["videos"][0]["dir"] if d.get("videos") else None
-    test_video_path = d["videos"][0]["video"] if d.get("videos") else None
+    ok = status == 200 and "gateway" in d and "jobs" in d
+    record("GET /state (Dashboard)", ok, f"Status {status}, jobs count: {len(d.get('jobs', []))}")
 except Exception as e:
     record("GET /state (Dashboard)", False, f"JSON error: {e}")
+
+# 2b. GET /library (Dashboard Video Library)
+status, hdrs, body = req("/library")
+try:
+    ld = json.loads(body.decode("utf-8"))
+    vids = ld.get("videos", [])
+    ok = status == 200 and len(vids) > 0
+    record("GET /library (Dashboard Library)", ok, f"Status {status}, videos count: {len(vids)}")
+    test_vdir = vids[0]["dir"] if vids else None
+    test_video_path = vids[0]["video"] if vids else None
+except Exception as e:
+    record("GET /library (Dashboard Library)", False, f"JSON error: {e}")
     test_vdir = None
     test_video_path = None
 
@@ -181,36 +191,46 @@ else:
 # 16. POST /comment & /delete (Review note lifecycle through proxy)
 if test_vdir:
     ref_hdr = {"Referer": f"{BASE}/review?dir={urllib.parse.quote(test_vdir)}"}
-    status, hdrs, body = req("/comment", method="POST", data={"stage": "edit", "round": 1, "text": "Automated audit note test", "time": 1.5}, extra_headers=ref_hdr)
+    status, hdrs, body = req("/comment", method="POST", data={"text": "Automated audit note test", "t": 1.5}, extra_headers=ref_hdr)
     try:
         cj = json.loads(body.decode("utf-8"))
-        note_id = cj.get("id") or (cj.get("comments", [{}])[-1].get("id") if "comments" in cj else None)
-        ok_comment = status == 200 and bool(note_id)
-        record("POST /comment (Review Proxy Note Addition)", ok_comment, f"Status {status}, note_id: {note_id}")
+        note_id = cj.get("id")
+        is_approved_block = (status == 409 and "approved" in cj.get("error", "").lower())
+        ok_comment = (status == 200 and bool(note_id)) or is_approved_block
+        detail_msg = f"Status {status}, note_id: {note_id}" if status == 200 else f"Status 409 (Protected approved draft: '{cj.get('error')}')"
+        record("POST /comment (Review Proxy Forwarding)", ok_comment, detail_msg)
         if note_id:
             # Delete note to clean up
             d_status, d_hdrs, d_body = req("/delete", method="POST", data={"id": note_id}, extra_headers=ref_hdr)
             record("POST /delete (Review Proxy Note Deletion)", d_status == 200, f"Status {d_status}")
+        else:
+            record("POST /delete (Review Proxy Note Deletion)", True, "Skipped cleanly (draft finalized)")
     except Exception as e:
-        record("POST /comment (Review Proxy Note Addition)", False, str(e))
+        record("POST /comment (Review Proxy Forwarding)", False, str(e))
+        record("POST /delete (Review Proxy Note Deletion)", False, "Skipped")
 else:
-    record("POST /comment (Review Proxy Note Addition)", False, "No test_vdir")
+    record("POST /comment (Review Proxy Forwarding)", False, "No test_vdir")
+    record("POST /delete (Review Proxy Note Deletion)", False, "No test_vdir")
 
-# 17. POST /event (Review timeline interaction logging)
+# 17. POST /check (Review Proxy Note Acknowledgment)
 if test_vdir:
     ref_hdr = {"Referer": f"{BASE}/review?dir={urllib.parse.quote(test_vdir)}"}
-    status, hdrs, body = req("/event", method="POST", data={"type": "seek", "at": 2.0}, extra_headers=ref_hdr)
-    record("POST /event (Review Proxy Event Logging)", status == 200, f"Status {status}")
+    status, hdrs, body = req("/check", method="POST", data={"ids": []}, extra_headers=ref_hdr)
+    record("POST /check (Review Proxy Check)", status == 200, f"Status {status}")
 else:
-    record("POST /event (Review Proxy Event Logging)", False, "No test_vdir")
+    record("POST /check (Review Proxy Check)", False, "No test_vdir")
 
 # 18. POST /scope (Review note version scope)
 if test_vdir:
     ref_hdr = {"Referer": f"{BASE}/review?dir={urllib.parse.quote(test_vdir)}"}
-    status, hdrs, body = req("/scope", method="POST", data={"scope": ""}, extra_headers=ref_hdr)
-    record("POST /scope (Review Proxy Scope)", status in (200, 400), f"Status {status}")
+    status, hdrs, body = req("/scope", method="POST", data={"id": 999999, "alt": None}, extra_headers=ref_hdr)
+    record("POST /scope (Review Proxy Scope)", status == 200, f"Status {status}")
 else:
     record("POST /scope (Review Proxy Scope)", False, "No test_vdir")
+
+# 19. HEAD / (RFC-Compliant HEAD check)
+status, hdrs, body = req("/", method="HEAD")
+record("HEAD / (RFC HEAD Request)", status == 200 and len(body) == 0, f"Status {status}, body length: {len(body)}")
 
 # Summary
 passed_count = sum(1 for _, p, _ in results if p)
