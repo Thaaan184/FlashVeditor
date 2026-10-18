@@ -63,7 +63,7 @@ def run_cmd_stream(cmd, cwd=None, on_line=None):
     return res
 
 
-def update_status(job_type, step=None, progress=None, done=False, failed=None, key=None, detail=None):
+def update_status(job_type, step=None, progress=None, done=False, failed=None, key=None, detail=None, result=None):
     cmd = [sys.executable, str(LIB / "home.py"), "status", job_type]
     if key:
         cmd.extend(["--key", str(key)])
@@ -73,6 +73,8 @@ def update_status(job_type, step=None, progress=None, done=False, failed=None, k
         cmd.extend(["--detail", str(detail)])
     if progress is not None:
         cmd.extend(["--progress", str(progress)])
+    if result is not None:
+        cmd.extend(["--result", json.dumps(result)])
     if done:
         cmd.append("--done")
     if failed:
@@ -384,7 +386,7 @@ def process_cut_feedback(edit_folder, root_dir, rdata):
         print(f"[WORKER] Advanced {edit_folder.name} to draft {rdata.get('round', 1) + 1} with feedback applied!", flush=True)
 
 
-def call_9router_for_edit(notes, words_data):
+def call_9router_chat(messages, system_prompt=None, max_tokens=None, timeout=60):
     base_url = os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1")
     if not base_url.endswith("/chat/completions"):
         if base_url.endswith("/v1") or base_url.endswith("/v1/"):
@@ -397,6 +399,52 @@ def call_9router_for_edit(notes, words_data):
     key = os.environ.get("GEMINI_API_KEY", "")
     model = os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high")
 
+    all_messages = []
+    if system_prompt:
+        all_messages.append({"role": "system", "content": system_prompt})
+    all_messages.extend(messages)
+
+    payload = {
+        "model": model,
+        "messages": all_messages,
+        "temperature": 0.2
+    }
+    if max_tokens:
+        payload["max_tokens"] = max_tokens
+
+    try:
+        req = urllib.request.Request(
+            url,
+            json.dumps(payload).encode("utf-8"),
+            {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+            if raw.strip().startswith("data:"):
+                parts = []
+                for line in raw.splitlines():
+                    line = line.strip()
+                    if line.startswith("data:"):
+                        d = line[5:].strip()
+                        if d == "[DONE]":
+                            break
+                        try:
+                            c = json.loads(d)
+                            delta = c["choices"][0].get("delta", {})
+                            if "content" in delta and delta["content"]:
+                                parts.append(delta["content"])
+                        except Exception:
+                            pass
+                return "".join(parts)
+            else:
+                data = json.loads(raw)
+                return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"[WORKER ERROR] 9Router chat call failed: {e}", flush=True)
+        return None
+
+
+def call_9router_for_edit(notes, words_data):
     system_prompt = """You are an autonomous AI Video Editor assistant.
 The user leaves review notes on a video edit.
 Analyze their instructions and output a single JSON object (strictly no markdown formatting):
@@ -421,29 +469,15 @@ Analyze their instructions and output a single JSON object (strictly no markdown
     notes_str = "\n".join([f"- Note #{c.get('id')} at {c.get('t', 0.0):.2f}s: \"{c.get('text', '')}\"" for c in notes])
     user_prompt = f"Transcript:\n{tx_str}\n\nUser Notes:\n{notes_str}\n\nGenerate editing plan."
 
-    payload = {
-        "model": model,
-        "stream": False,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    }
-
+    raw = call_9router_chat([{"role": "user", "content": user_prompt}], system_prompt=system_prompt)
+    if not raw:
+        return None
     try:
-        req = urllib.request.Request(
-            url,
-            json.dumps(payload).encode("utf-8"),
-            {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            content = data["choices"][0]["message"]["content"]
-            content = re.sub(r"^```(?:json)?\s*", "", content.strip())
-            content = re.sub(r"\s*```$", "", content)
-            return json.loads(content)
+        content = re.sub(r"^```(?:json)?\s*", "", raw.strip())
+        content = re.sub(r"\s*```$", "", content)
+        return json.loads(content)
     except Exception as e:
-        print(f"[WORKER ERROR] 9Router call failed: {e}", flush=True)
+        print(f"[WORKER ERROR] 9Router edit plan parse failed: {e}", flush=True)
         return None
 
 
@@ -588,6 +622,107 @@ def check_review_activity(root_dir):
             print(f"[WORKER ERROR] check_review_activity for {edit_folder.name}: {e}", flush=True)
 
 
+def process_skill_new(args_dict, root_dir="/library"):
+    user_text = args_dict.get("text", "").strip()
+    if not user_text:
+        update_status("skill-new", failed="No description provided for new skill")
+        return
+
+    print(f"[WORKER] Starting skill-new generation with 9Router for: {user_text[:80]}...", flush=True)
+    update_status("skill-new", step="Designing skill architecture via 9Router", detail="Querying 9Router (ag/gemini-3.8-flash-high)...", progress=0.2)
+
+    system_prompt = """You are an expert AI Video Editor and Skill Architect for MEMASAK (an AI Video Editor platform).
+Given the user's requirements, design a complete, production-grade video editing skill according to the Agent Skills specification.
+Respond strictly with ONLY a JSON object (no markdown code blocks, no other text):
+{
+  "name": "lowercase-hyphenated-name-max-40-chars",
+  "title": "Clean Human Readable Title",
+  "description": "Edits a vertical video into [style]. Use when the user says \\"phrase\\", \\"phrase\\" or [situation].",
+  "skill_md": "---\\nname: lowercase-hyphenated-name-max-40-chars\\ndescription: Edits a vertical video into [style]. Use when the user says \\"phrase\\", \\"phrase\\" or [situation].\\n---\\n\\n# Title\\n\\n[One line: what goes in, what comes out]\\n\\nCopy this checklist and tick it off:\\n\\n```\\n- [ ] 1. Step one\\n- [ ] 2. Step two\\n- [ ] 3. Step three\\n- [ ] 4. Check the result, fix, check again\\n- [ ] 5. Put the render on the review page\\n```\\n\\n## 1. Concrete instructions...\\n\\n## Check\\nCheck instructions to verify...\\n\\n## Example\\nReal input and expected output...\\n\\n## Learned rules\\n",
+  "evals": [
+    {"query": "edit my video in this style", "expected_behavior": ["Criterion 1", "Criterion 2"]},
+    {"query": "make a short following this look", "expected_behavior": ["Criterion 1", "Criterion 2"]},
+    {"query": "re-render with dynamic pacing", "expected_behavior": ["Criterion 1", "Criterion 2"]}
+  ]
+}
+
+CRITICAL RULES FOR SKILL_MD:
+1. 'name' must be lowercase alphanumeric and hyphens only, at most 64 chars. Never contain 'claude' or 'anthropic'.
+2. 'description' must be third-person ('Edits ...', NOT 'I can' or 'You can'), at most 1024 characters, and MUST contain 'Use when the user says'.
+3. 'description' MUST mention at least one of: video, captions, reel, footage, or thumbnail.
+4. Body MUST contain a copyable checklist with '- [ ]' steps.
+5. Body MUST contain a '## Check' section with concrete verification instructions and fixes.
+6. Body MUST contain an '## Example' section.
+7. Body MUST end with an empty '## Learned rules' section.
+8. No unresolved placeholders like '[step]' or '[One'.
+9. Keep under 350 lines."""
+
+    resp_text = call_9router_chat([{"role": "user", "content": f"User instructions for the skill:\n{user_text}"}], system_prompt=system_prompt)
+    if not resp_text:
+        update_status("skill-new", failed="9Router failed to respond. Check gateway connection.")
+        return
+
+    try:
+        clean_json = re.sub(r"^```(?:json)?\s*", "", resp_text.strip())
+        clean_json = re.sub(r"\s*```$", "", clean_json)
+        skill_data = json.loads(clean_json)
+    except Exception as e:
+        print(f"[WORKER ERROR] Failed to parse 9Router JSON: {e}\nRaw: {resp_text[:300]}", flush=True)
+        update_status("skill-new", failed=f"Failed to parse skill specification: {e}")
+        return
+
+    name = re.sub(r"[^a-z0-9-]", "-", skill_data.get("name", "custom-skill").lower()).strip("-")
+    if not name:
+        name = "custom-video-skill"
+    name = re.sub(r"-+", "-", name)[:40]
+    title = skill_data.get("title", name.replace("-", " ").title())
+    desc = skill_data.get("description", f"Edits a vertical video into custom style. Use when the user says \"{name}\".")
+    skill_md = skill_data.get("skill_md", "")
+    evals = skill_data.get("evals", [])
+
+    update_status("skill-new", step="Writing SKILL.md and evaluation scenarios", detail=f"Writing to skills/{name}/", progress=0.6)
+
+    # Save to primary skills directory
+    try:
+        from ai_editor import styleskill
+        base_sdir = styleskill.skills_dir()
+    except Exception:
+        base_sdir = Path("/app/.claude/skills")
+
+    skill_folders = [base_sdir / name]
+    lib_skills = Path(root_dir) / ".claude" / "skills" / name
+    if lib_skills != skill_folders[0]:
+        skill_folders.append(lib_skills)
+
+    for sdir in skill_folders:
+        sdir.mkdir(parents=True, exist_ok=True)
+        (sdir / "SKILL.md").write_text(skill_md, encoding="utf-8")
+        evals_dir = sdir / "evals"
+        evals_dir.mkdir(parents=True, exist_ok=True)
+        (evals_dir / "evals.json").write_text(json.dumps(evals, indent=2), encoding="utf-8")
+
+    update_status("skill-new", step="Validating skill specification", detail="Running skill_maker check", progress=0.8)
+
+    # Verify skill with skill_maker.py check
+    check_script = ROOT / "plugins" / "ai-editor" / "skills" / "skill-maker" / "scripts" / "skill_maker.py"
+    if check_script.exists():
+        py = sys.executable
+        res = run_cmd([py, str(check_script), "check", str(skill_folders[0])])
+        if res.returncode != 0:
+            print(f"[WORKER WARN] skill_maker check warnings: {res.stdout.strip()}", flush=True)
+
+    # Register as own style in library so it shows up in Styles immediately
+    try:
+        home.new_own_style(root_dir, title, name)
+        print(f"[WORKER] Successfully registered style '{title}' for skill '{name}'", flush=True)
+    except Exception as e:
+        print(f"[WORKER WARN] Could not register style automatically: {e}", flush=True)
+
+    summary_msg = f"Made /{name}. It is on the Skills page."
+    update_status("skill-new", step="Skill creation complete", progress=1.0, done=True, result={"summary": summary_msg})
+    print(f"[WORKER] {summary_msg}", flush=True)
+
+
 def parse_job_line(line):
     parts = shlex.split(line)
     if len(parts) < 2 or parts[0] != "JOB":
@@ -631,6 +766,11 @@ def check_orphaned_jobs(root_dir="/library"):
                     if not st_file.exists():
                         print(f"[WORKER] Recovering orphaned taken teardown job {j.get('id')} ({handle})...", flush=True)
                         process_teardown(args, root_dir)
+            elif jstate == "taken" and jtype == "skill-new":
+                steps = j.get("steps", [])
+                if not steps or not any(s.get("done") for s in steps):
+                    print(f"[WORKER] Recovering orphaned taken skill-new job {j.get('id')}...", flush=True)
+                    process_skill_new(args, root_dir)
     except Exception as e:
         print(f"[WORKER ERROR] check_orphaned_jobs: {e}", flush=True)
 
@@ -664,6 +804,8 @@ def run_loop():
                         setup_py = ROOT / "plugins" / "ai-editor" / "skills" / "setup" / "scripts" / "setup.py"
                         run_cmd([py, str(setup_py), "install-all"], cwd=root_dir)
                         update_status("setup", done=True)
+                    elif jtype == "skill-new":
+                        process_skill_new(args, root_dir)
         except subprocess.TimeoutExpired:
             # Expected when no new jobs queued; allows loop to run periodic checks
             pass
