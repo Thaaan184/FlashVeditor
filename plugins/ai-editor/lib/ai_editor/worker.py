@@ -10,7 +10,14 @@ import shlex
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
+
+try:
+    from PIL import Image, ImageDraw
+except Exception:
+    Image = None
+    ImageDraw = None
 
 ROOT = Path(__file__).resolve().parents[4]
 LIB = Path(__file__).resolve().parent
@@ -331,6 +338,176 @@ def process_cut_feedback(edit_folder, root_dir, rdata):
         print(f"[WORKER] Advanced {edit_folder.name} to draft {rdata.get('round', 1) + 1} with feedback applied!", flush=True)
 
 
+def call_9router_for_edit(notes, words_data):
+    base_url = os.environ.get("GEMINI_BASE_URL", "http://100.96.207.8:20128/v1")
+    if not base_url.endswith("/chat/completions"):
+        if base_url.endswith("/v1") or base_url.endswith("/v1/"):
+            url = base_url.rstrip("/") + "/chat/completions"
+        else:
+            url = "http://100.96.207.8:20128/v1/chat/completions"
+    else:
+        url = base_url
+
+    key = os.environ.get("GEMINI_API_KEY", "")
+    model = os.environ.get("GEMINI_MODEL", "ag/gemini-3.8-flash-high")
+
+    system_prompt = """You are an autonomous AI Video Editor assistant.
+The user leaves review notes on a video edit.
+Analyze their instructions and output a single JSON object (strictly no markdown formatting):
+{
+  "replies": [{"id": int, "reply": "Indonesian/English explanation of changes made"}],
+  "graphics": [
+    {
+      "name": "snake_case_name",
+      "type": "sunset" | "character" | "badge" | "logo" | "card",
+      "title": "Title to show",
+      "subtitle": "Subtitle or empty",
+      "color": "#HEX",
+      "word": "word from transcript to sync with",
+      "time": float_seconds,
+      "hold_s": 2.0
+    }
+  ]
+}"""
+
+    tx_lines = [f"- {w.get('start', 0.0):.2f}s: \"{w.get('text', '')}\"" for w in words_data[:25]]
+    tx_str = "\n".join(tx_lines)
+    notes_str = "\n".join([f"- Note #{c.get('id')} at {c.get('t', 0.0):.2f}s: \"{c.get('text', '')}\"" for c in notes])
+    user_prompt = f"Transcript:\n{tx_str}\n\nUser Notes:\n{notes_str}\n\nGenerate editing plan."
+
+    payload = {
+        "model": model,
+        "stream": False,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            json.dumps(payload).encode("utf-8"),
+            {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            content = data["choices"][0]["message"]["content"]
+            content = re.sub(r"^```(?:json)?\s*", "", content.strip())
+            content = re.sub(r"\s*```$", "", content)
+            return json.loads(content)
+    except Exception as e:
+        print(f"[WORKER ERROR] 9Router call failed: {e}", flush=True)
+        return None
+
+
+def generate_graphic_card(g, img_path):
+    if Image is None or ImageDraw is None:
+        return
+    g_type = g.get("type", "card")
+    title = g.get("title", "Graphic")
+    sub = g.get("subtitle", "")
+    hex_color = g.get("color", "#FFA500")
+
+    def parse_rgb(h):
+        h = h.lstrip("#")
+        try:
+            return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        except Exception:
+            return (255, 165, 0)
+
+    rgb = parse_rgb(hex_color)
+
+    if g_type == "sunset":
+        im = Image.new("RGBA", (400, 400), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.ellipse([40, 40, 360, 360], fill=(*rgb, 100))
+        d.ellipse([80, 80, 320, 320], fill=(*rgb, 240))
+        d.ellipse([110, 110, 290, 290], fill=(255, 220, 100, 255))
+        for y in (240, 270, 300):
+            d.line([(60, y), (340, y)], fill=(20, 20, 40, 220), width=6)
+        im.save(img_path)
+    else:
+        im = Image.new("RGBA", (460, 220), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle([10, 10, 450, 210], radius=24, fill=(20, 24, 33, 235), outline=(*rgb, 255), width=4)
+        d.ellipse([30, 45, 145, 160], fill=(*rgb, 220))
+        d.ellipse([50, 65, 125, 140], fill=(255, 255, 255, 240))
+        d.rectangle([65, 90, 88, 105], fill=(20, 20, 20, 255))
+        d.rectangle([92, 90, 115, 105], fill=(20, 20, 20, 255))
+        d.line([(88, 97), (92, 97)], fill=(20, 20, 20, 255), width=3)
+        d.text((165, 55), title.upper()[:20], fill=(255, 255, 255, 255))
+        if sub:
+            d.text((165, 95), sub[:30], fill=(*rgb, 255))
+        d.text((165, 130), "AI Generated Beat", fill=(200, 200, 200, 255))
+        im.save(img_path)
+
+
+def process_edit_feedback(edit_folder, root_dir, rdata):
+    comments = rdata.get("comments", [])
+    open_comments = [c for c in comments if c.get("round") == rdata.get("round") and c.get("status") == "open"]
+    if not open_comments:
+        return
+
+    print(f"[WORKER] Calling 9Router to process {len(open_comments)} edit note(s) for {edit_folder.name}...", flush=True)
+    words_file = edit_folder / "words.json"
+    words_data = []
+    if words_file.exists():
+        try:
+            words_data = json.loads(words_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    ai_plan = call_9router_for_edit(open_comments, words_data)
+    py = sys.executable
+    rev_script = ROOT / "plugins" / "ai-editor" / "lib" / "ai_editor" / "review.py"
+
+    img_dir = edit_folder / "images"
+    img_dir.mkdir(parents=True, exist_ok=True)
+    images_file = edit_folder / "images.json"
+    try:
+        images_list = json.loads(images_file.read_text(encoding="utf-8")) if images_file.exists() else []
+    except Exception:
+        images_list = []
+
+    if ai_plan and "graphics" in ai_plan:
+        for g in ai_plan["graphics"]:
+            g_name = re.sub(r"[^\w-]", "_", g.get("name", "card"))
+            png_name = f"{g_name}.png"
+            png_path = img_dir / png_name
+            generate_graphic_card(g, png_path)
+            trig_w = g.get("word") or (words_data[0]["text"] if words_data else "")
+            images_list.append({
+                "src": f"images/{png_name}",
+                "word": trig_w,
+                "hold_s": float(g.get("hold_s", 2.0)),
+                "size": [460, 220] if g.get("type") != "sunset" else [400, 400]
+            })
+        images_file.write_text(json.dumps(images_list, indent=1), encoding="utf-8")
+
+    # Re-run plan & render
+    process_style_edit(edit_folder, root_dir)
+
+    # Resolve comments with 9Router replies
+    replies_map = {r["id"]: r["reply"] for r in (ai_plan.get("replies", []) if ai_plan else [])}
+    for c in open_comments:
+        cid = c.get("id")
+        rep = replies_map.get(cid, "Applied via 9Router")
+        run_cmd([py, str(rev_script), str(edit_folder), "resolve", str(cid), "fixed", "--reply", rep], cwd=root_dir)
+
+    # Advance to next draft round
+    render_mp4 = edit_folder / "render.mp4"
+    plan_file = edit_folder / "plan.json"
+    if render_mp4.exists():
+        cmd = [py, str(rev_script), str(edit_folder), "round", "--stage", "edit", "--video", str(render_mp4)]
+        if words_file.exists():
+            cmd.extend(["--transcript", str(words_file)])
+        if plan_file.exists():
+            cmd.extend(["--plan", str(plan_file)])
+        run_cmd(cmd, cwd=root_dir)
+        print(f"[WORKER] Successfully applied 9Router edit feedback to {edit_folder.name}!", flush=True)
+
+
 def check_review_activity(root_dir):
     lib_edits = Path(root_dir) / "edits"
     if not lib_edits.exists():
@@ -347,10 +524,13 @@ def check_review_activity(root_dir):
 
             # 1. Check for unhandled user notes submission (type == 'send' and not handled)
             for ev in events:
-                if ev.get("type") == "send" and not ev.get("handled") and ev.get("stage") == "cut":
+                if ev.get("type") == "send" and not ev.get("handled"):
                     ev["handled"] = True
                     rj.write_text(json.dumps(rdata, indent=1), encoding="utf-8")
-                    process_cut_feedback(edit_folder, root_dir, rdata)
+                    if ev.get("stage") == "cut":
+                        process_cut_feedback(edit_folder, root_dir, rdata)
+                    elif ev.get("stage") == "edit":
+                        process_edit_feedback(edit_folder, root_dir, rdata)
                     break
 
             # 2. Check for cut approval
