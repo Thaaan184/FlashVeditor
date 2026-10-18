@@ -48,7 +48,7 @@ print(f"--- Running full route audit on {BASE} ---")
 
 # 1. GET /
 status, hdrs, body = req("/")
-record("GET / (Dashboard Home)", status == 200 and b"cooked." in body, f"Status {status}, len {len(body)}")
+record("GET / (Dashboard Home)", status == 200 and b"FlashVeditor" in body, f"Status {status}, len {len(body)}")
 
 # 2. GET /state (Dashboard System State)
 status, hdrs, body = req("/state")
