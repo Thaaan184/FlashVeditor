@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import React from "react";
+import { interpolate, useCurrentFrame } from "remotion";
 import { CartoonTextBox } from "./CartoonTextBox";
 import { GunCutoutMascot } from "./GunCutoutMascot";
 
@@ -9,19 +9,52 @@ export interface MinimapRouteTrackerProps {
   endFrame?: number;
 }
 
+const MAP_WIDTH = 560;
+const MAP_HEIGHT = 560;
+const MAP_LEFT = 40;
+const MAP_TOP = 60;
+
+// Exact trajectory waypoints matching user sketch (normalized 0 to 100 within minimap circle)
+const WAYPOINTS = [
+  { x: 14, y: 47 },
+  { x: 26, y: 47 },
+  { x: 28, y: 56 },
+  { x: 35, y: 57 },
+  { x: 36, y: 50 },
+  { x: 44, y: 43 },
+  { x: 51, y: 38 }, // Red X apex (Mid)
+  { x: 55, y: 46 }, // East corridor descent
+  { x: 55, y: 55 },
+  { x: 48, y: 61 }, // Bottom bend
+  { x: 43, y: 64 }, // Bypassing AWP box
+  { x: 37, y: 64 }, // Next to AWP
+  { x: 30, y: 63 }, // Looping west
+  { x: 27, y: 56 }, // Back up
+  { x: 26, y: 47 }, // Back to A Link
+  { x: 14, y: 47 }, // Back to A Site
+];
+
+// Precomputed static SVG path string
+const SVG_PATH =
+  "M " +
+  WAYPOINTS.map(
+    (p) => `${(p.x * MAP_WIDTH) / 100},${(p.y * MAP_HEIGHT) / 100}`
+  ).join(" L ");
+
+// Target AWP position
+const TARGET_X = (37.4 * MAP_WIDTH) / 100;
+const TARGET_Y = (64.3 * MAP_HEIGHT) / 100;
+
 export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
   active = true,
   startFrame = 780,
   endFrame = 1680,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   if (!active || frame < startFrame || frame > endFrame) {
     return null;
   }
-
-  const relFrame = frame - startFrame;
 
   // Stepped frame for cartoon animation
   const stepped = Math.floor(frame / 4);
@@ -32,63 +65,18 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
     extrapolateRight: "clamp",
   });
 
-  // Minimap circle dimensions on 1080x1920 when zoomed (2.3x)
-  // Minimap center is at approx X=250px, Y=230px on raw video, zoomed 2.3x
-  // Placed over top-left canvas area:
-  const mapWidth = 560;
-  const mapHeight = 560;
-  const mapLeft = 40;
-  const mapTop = 60;
-
-  // Exact trajectory waypoints matching user sketch (normalized 0 to 100 within minimap circle)
-  const waypoints = useMemo(
-    () => [
-      { x: 14, y: 47 },
-      { x: 26, y: 47 },
-      { x: 28, y: 56 },
-      { x: 35, y: 57 },
-      { x: 36, y: 50 },
-      { x: 44, y: 43 },
-      { x: 51, y: 38 }, // Red X apex (Mid)
-      { x: 55, y: 46 }, // East corridor descent
-      { x: 55, y: 55 },
-      { x: 48, y: 61 }, // Bottom bend
-      { x: 43, y: 64 }, // Bypassing AWP box
-      { x: 37, y: 64 }, // Next to AWP
-      { x: 30, y: 63 }, // Looping west
-      { x: 27, y: 56 }, // Back up
-      { x: 26, y: 47 }, // Back to A Link
-      { x: 14, y: 47 }, // Back to A Site
-    ],
-    []
-  );
-
-  // Build SVG path string
-  const svgPath = useMemo(() => {
-    return (
-      "M " +
-      waypoints
-        .map((p) => `${(p.x * mapWidth) / 100},${(p.y * mapHeight) / 100}`)
-        .join(" L ")
-    );
-  }, [waypoints, mapWidth, mapHeight]);
-
-  // Target AWP position
-  const targetX = (37.4 * mapWidth) / 100;
-  const targetY = (64.3 * mapHeight) / 100;
-
   // Approximate current runner head position along waypoints
-  const totalSegments = waypoints.length - 1;
+  const totalSegments = WAYPOINTS.length - 1;
   const currentSegFloat = drawProgress * totalSegments;
   const currentSegIdx = Math.min(
     Math.floor(currentSegFloat),
     totalSegments - 1
   );
   const segAlpha = currentSegFloat - currentSegIdx;
-  const p0 = waypoints[currentSegIdx];
-  const p1 = waypoints[currentSegIdx + 1];
-  const headX = (p0.x + (p1.x - p0.x) * segAlpha) * (mapWidth / 100);
-  const headY = (p0.y + (p1.y - p0.y) * segAlpha) * (mapHeight / 100);
+  const p0 = WAYPOINTS[currentSegIdx];
+  const p1 = WAYPOINTS[currentSegIdx + 1];
+  const headX = (p0.x + (p1.x - p0.x) * segAlpha) * (MAP_WIDTH / 100);
+  const headY = (p0.y + (p1.y - p0.y) * segAlpha) * (MAP_HEIGHT / 100);
 
   // Target pulse
   const targetPulse = 1 + Math.sin(frame * 0.2) * 0.12;
@@ -118,12 +106,12 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
           width: "100%",
           height: "100%",
           backgroundColor: "rgba(10, 10, 18, 0.55)",
-          maskImage: `radial-gradient(circle 300px at ${mapLeft + mapWidth / 2}px ${
-            mapTop + mapHeight / 2
+          maskImage: `radial-gradient(circle 300px at ${MAP_LEFT + MAP_WIDTH / 2}px ${
+            MAP_TOP + MAP_HEIGHT / 2
           }px, transparent 82%, black 100%)`,
           WebkitMaskImage: `radial-gradient(circle 300px at ${
-            mapLeft + mapWidth / 2
-          }px ${mapTop + mapHeight / 2}px, transparent 82%, black 100%)`,
+            MAP_LEFT + MAP_WIDTH / 2
+          }px ${MAP_TOP + MAP_HEIGHT / 2}px, transparent 82%, black 100%)`,
         }}
       />
 
@@ -131,10 +119,10 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
       <div
         style={{
           position: "absolute",
-          left: mapLeft,
-          top: mapTop,
-          width: mapWidth,
-          height: mapHeight,
+          left: MAP_LEFT,
+          top: MAP_TOP,
+          width: MAP_WIDTH,
+          height: MAP_HEIGHT,
           borderRadius: "50%",
           border: "8px solid #000000",
           boxShadow: "0 0 0 6px #FFFFFF, 12px 12px 0px #000000",
@@ -150,7 +138,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
             height: "100%",
             overflow: "visible",
           }}
-          viewBox={`0 0 ${mapWidth} ${mapHeight}`}
+          viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
         >
           <defs>
             <filter id="handDrawn" x="-10%" y="-10%" width="120%" height="120%">
@@ -172,7 +160,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
 
           {/* Running Trail Path - Black Base Line */}
           <path
-            d={svgPath}
+            d={SVG_PATH}
             fill="none"
             stroke="#000000"
             strokeWidth="10"
@@ -186,7 +174,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
 
           {/* Running Trail Path - Inner White Dashes */}
           <path
-            d={svgPath}
+            d={SVG_PATH}
             fill="none"
             stroke="#FFFFFF"
             strokeWidth="5"
@@ -199,7 +187,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
 
           {/* Red Target Box (Position of AWP) matching user hand-drawn box */}
           <g
-            transform={`translate(${targetX}, ${targetY}) scale(${targetPulse})`}
+            transform={`translate(${TARGET_X}, ${TARGET_Y}) scale(${targetPulse})`}
           >
             {/* Wobbly hand-drawn red square */}
             <rect
@@ -246,8 +234,8 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
         <div
           style={{
             position: "absolute",
-            left: targetX - 55,
-            top: targetY + 32,
+            left: TARGET_X - 55,
+            top: TARGET_Y + 32,
             backgroundColor: "#FF2A2A",
             color: "#FFFDF0",
             border: "3px solid #000000",
@@ -287,7 +275,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
         <div
           style={{
             position: "absolute",
-            top: mapTop + mapHeight + 30,
+            top: MAP_TOP + MAP_HEIGHT + 30,
             left: 50,
             zIndex: 65,
           }}
@@ -308,7 +296,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
         <div
           style={{
             position: "absolute",
-            top: mapTop + mapHeight + 20,
+            top: MAP_TOP + MAP_HEIGHT + 20,
             left: 40,
             zIndex: 70,
           }}
@@ -331,7 +319,7 @@ export const MinimapRouteTracker: React.FC<MinimapRouteTrackerProps> = ({
         <div
           style={{
             position: "absolute",
-            top: mapTop + mapHeight + 110,
+            top: MAP_TOP + MAP_HEIGHT + 110,
             left: 50,
             zIndex: 75,
           }}
