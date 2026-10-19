@@ -777,12 +777,7 @@ def check_orphaned_jobs(root_dir="/library"):
 
 def update_heartbeats(root_dir="/library"):
     try:
-        # 1. Dashboard home heartbeat
-        h_beat = home.home() / ".listening"
-        h_beat.parent.mkdir(parents=True, exist_ok=True)
-        h_beat.touch()
-
-        # 2. Review studio heartbeats for all video projects
+        # Review studio heartbeats for all video projects
         lib_edits = Path(root_dir) / "edits"
         if lib_edits.exists():
             for edit_folder in lib_edits.iterdir():
