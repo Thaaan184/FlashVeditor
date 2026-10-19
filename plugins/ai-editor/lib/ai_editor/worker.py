@@ -775,6 +775,25 @@ def check_orphaned_jobs(root_dir="/library"):
         print(f"[WORKER ERROR] check_orphaned_jobs: {e}", flush=True)
 
 
+def update_heartbeats(root_dir="/library"):
+    try:
+        # 1. Dashboard home heartbeat
+        h_beat = home.home() / ".listening"
+        h_beat.parent.mkdir(parents=True, exist_ok=True)
+        h_beat.touch()
+
+        # 2. Review studio heartbeats for all video projects
+        lib_edits = Path(root_dir) / "edits"
+        if lib_edits.exists():
+            for edit_folder in lib_edits.iterdir():
+                if edit_folder.is_dir() and (edit_folder / "review.json").exists():
+                    r_beat = edit_folder / "review" / ".listening"
+                    r_beat.parent.mkdir(parents=True, exist_ok=True)
+                    r_beat.touch()
+    except Exception as e:
+        pass
+
+
 def run_loop():
     print("[WORKER] MEMASAK Auto-Worker running. Waiting for jobs...", flush=True)
     home_py = LIB / "home.py"
@@ -782,6 +801,7 @@ def run_loop():
 
     while True:
         try:
+            update_heartbeats("/library")
             check_orphaned_jobs("/library")
             check_review_activity("/library")
 

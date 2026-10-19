@@ -45,8 +45,12 @@ if [ "$#" -eq 0 ] || [ "$1" = "serve" ]; then
   echo " 9Router: ${GEMINI_BASE_URL:-http://host.docker.internal:20128}"
   echo " Model: ${GEMINI_MODEL:-ag/gemini-3.8-flash-high}"
   echo "=========================================================="
-  # Start Auto-Worker in background
-  python3 plugins/ai-editor/lib/ai_editor/worker.py &
+  # Start Auto-Worker in background supervisor loop
+  (while true; do
+    echo "[SUPERVISOR] Starting MEMASAK worker.py..."
+    python3 plugins/ai-editor/lib/ai_editor/worker.py || true
+    sleep 2
+  done) &
   exec python3 plugins/ai-editor/lib/ai_editor/home.py serve --no-open --port 47821
 fi
 
