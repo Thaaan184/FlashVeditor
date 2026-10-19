@@ -66,8 +66,10 @@ try:
     vids = ld.get("videos", [])
     ok = status == 200 and len(vids) > 0
     record("GET /library (Dashboard Library)", ok, f"Status {status}, videos count: {len(vids)}")
-    test_vdir = vids[0]["dir"] if vids else None
-    test_video_path = vids[0]["video"] if vids else None
+    # Prefer a finished video with media if available
+    fav = next((v for v in vids if v.get("status") == "done" and v.get("media")), vids[0] if vids else None)
+    test_vdir = fav["dir"] if fav else None
+    test_video_path = fav["video"] if fav else None
 except Exception as e:
     record("GET /library (Dashboard Library)", False, f"JSON error: {e}")
     test_vdir = None
