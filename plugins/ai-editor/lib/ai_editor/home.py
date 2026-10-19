@@ -1232,9 +1232,35 @@ def update_info():
 
 
 def trash(p):
-    """To the Trash (Finder, Recycle Bin, gio). True when the file is gone from where it was."""
-    r = subprocess.run(library.trash_cmd(p), capture_output=True, timeout=60)
-    return r.returncode == 0 and not Path(p).exists()
+    """To the Trash (Finder, Recycle Bin, gio, or container fallback). True when the file is gone from where it was."""
+    p = Path(p)
+    if not p.exists():
+        return True
+    try:
+        r = subprocess.run(library.trash_cmd(p), capture_output=True, timeout=60)
+        if r.returncode == 0 and not p.exists():
+            return True
+    except (OSError, ValueError):
+        pass
+
+    try:
+        root = Path(read().get("root") or library.path())
+        trash_dir = (root / ".Trash") if root.exists() else (p.parent / ".Trash")
+        trash_dir.mkdir(parents=True, exist_ok=True)
+        dest = trash_dir / f"{p.name}_{int(time.time())}"
+        shutil.move(str(p), str(dest))
+        return not p.exists()
+    except Exception:
+        pass
+
+    try:
+        if p.is_dir():
+            shutil.rmtree(p)
+        else:
+            p.unlink()
+        return not p.exists()
+    except OSError:
+        return False
 
 
 def recent_list(st):
