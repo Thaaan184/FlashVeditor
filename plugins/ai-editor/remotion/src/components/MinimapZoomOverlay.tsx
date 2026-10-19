@@ -24,7 +24,7 @@ export const MinimapZoomOverlay: React.FC<MinimapZoomOverlayProps> = ({
   // Fade in and out
   const opacity = interpolate(
     relFrame,
-    [0, 25, totalFrames - 30, totalFrames],
+    [0, 20, totalFrames - 30, totalFrames],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -36,7 +36,7 @@ export const MinimapZoomOverlay: React.FC<MinimapZoomOverlayProps> = ({
     extrapolateRight: "clamp",
   });
 
-  const pathLength = 650;
+  const pathLength = 850;
   const strokeDashoffset = pathLength * (1 - pathProgress);
 
   return (
@@ -46,16 +46,16 @@ export const MinimapZoomOverlay: React.FC<MinimapZoomOverlayProps> = ({
         inset: 0,
         pointerEvents: "none",
         opacity,
-        zIndex: 40,
+        zIndex: 45,
       }}
     >
-      {/* Spotlight Radial Mask: Highlights Minimap (top-left ~220px 220px), dims the rest */}
+      {/* Spotlight Radial Mask: Highlights Minimap (top-left), dims the rest */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(circle at 240px 220px, rgba(0,0,0,0) 160px, rgba(10,12,20,0.55) 300px, rgba(5,7,12,0.85) 650px)",
+            "radial-gradient(circle at 320px 320px, rgba(0,0,0,0) 240px, rgba(10,12,20,0.55) 450px, rgba(5,7,12,0.85) 900px)",
         }}
       />
 
@@ -64,86 +64,78 @@ export const MinimapZoomOverlay: React.FC<MinimapZoomOverlayProps> = ({
         style={{
           position: "absolute",
           left: 40,
-          top: 30,
-          width: 400,
-          height: 380,
+          top: 40,
+          width: 580,
+          height: 560,
           overflow: "visible",
         }}
       >
         {/* Radar Ring Glow */}
         <circle
-          cx="200"
-          cy="190"
-          r="165"
+          cx="300"
+          cy="290"
+          r="250"
           fill="none"
           stroke="#00FFFF"
-          strokeWidth="3"
-          strokeDasharray="12 6"
-          opacity="0.8"
+          strokeWidth="4"
+          strokeDasharray="16 8"
+          opacity="0.85"
+          filter="drop-shadow(0 0 12px #00FFFF)"
         />
 
         {/* Tactical Crosshairs */}
-        <line x1="200" y1="10" x2="200" y2="40" stroke="#00FFFF" strokeWidth="2" opacity="0.7" />
-        <line x1="200" y1="340" x2="200" y2="370" stroke="#00FFFF" strokeWidth="2" opacity="0.7" />
-        <line x1="20" y1="190" x2="50" y2="190" stroke="#00FFFF" strokeWidth="2" opacity="0.7" />
-        <line x1="350" y1="190" x2="380" y2="190" stroke="#00FFFF" strokeWidth="2" opacity="0.7" />
+        <line x1="300" y1="20" x2="300" y2="70" stroke="#00FFFF" strokeWidth="3" opacity="0.8" />
+        <line x1="300" y1="510" x2="300" y2="560" stroke="#00FFFF" strokeWidth="3" opacity="0.8" />
+        <line x1="30" y1="290" x2="80" y2="290" stroke="#00FFFF" strokeWidth="3" opacity="0.8" />
+        <line x1="520" y1="290" x2="570" y2="290" stroke="#00FFFF" strokeWidth="3" opacity="0.8" />
 
-        {/* Chamber Marathon Dashed Run Path: Mid (200, 210) -> B (120, 220) -> Spawn (110, 110) -> A (270, 110) */}
+        {/* Chamber Marathon Dashed Run Path: Mid -> B -> Spawn -> A */}
         <path
-          d="M 210 220 Q 140 250 120 200 Q 95 130 140 100 Q 210 70 270 120"
+          d="M 320 330 Q 210 380 180 300 Q 140 180 220 140 Q 320 90 410 170"
           fill="none"
           stroke="#39FF14"
-          strokeWidth="6"
+          strokeWidth="8"
           strokeDasharray={pathLength}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          filter="drop-shadow(0 0 10px #39FF14)"
+          filter="drop-shadow(0 0 14px #39FF14)"
         />
 
         {/* Start Point (Mid OP) */}
-        <circle cx="210" cy="220" r="7" fill="#FFD700" filter="drop-shadow(0 0 8px #FFD700)" />
+        <circle cx="320" cy="330" r="10" fill="#FFD700" filter="drop-shadow(0 0 10px #FFD700)" />
         <text
-          x="225"
-          y="225"
+          x="340"
+          y="338"
           fill="#FFD700"
           fontFamily="'Montserrat', 'Rubik', sans-serif"
           fontWeight="900"
-          fontSize="16"
+          fontSize="22"
+          filter="drop-shadow(2px 2px 0px #000)"
         >
-          AWP MID
+          AWP MID 🎯
         </text>
-
-        {/* Waypoint 1 (B Site) */}
-        {pathProgress > 0.35 && (
-          <circle cx="120" cy="200" r="5" fill="#39FF14" opacity="0.9" />
-        )}
-
-        {/* Waypoint 2 (Defender Spawn) */}
-        {pathProgress > 0.65 && (
-          <circle cx="140" cy="100" r="5" fill="#39FF14" opacity="0.9" />
-        )}
 
         {/* Gun's current animated position icon along path */}
         <circle
           cx={
             pathProgress < 0.35
-              ? interpolate(pathProgress, [0, 0.35], [210, 120])
+              ? interpolate(pathProgress, [0, 0.35], [320, 180])
               : pathProgress < 0.7
-              ? interpolate(pathProgress, [0.35, 0.7], [120, 140])
-              : interpolate(pathProgress, [0.7, 1.0], [140, 270])
+              ? interpolate(pathProgress, [0.35, 0.7], [180, 220])
+              : interpolate(pathProgress, [0.7, 1.0], [220, 410])
           }
           cy={
             pathProgress < 0.35
-              ? interpolate(pathProgress, [0, 0.35], [220, 200])
+              ? interpolate(pathProgress, [0, 0.35], [330, 300])
               : pathProgress < 0.7
-              ? interpolate(pathProgress, [0.35, 0.7], [200, 100])
-              : interpolate(pathProgress, [0.7, 1.0], [100, 120])
+              ? interpolate(pathProgress, [0.35, 0.7], [300, 140])
+              : interpolate(pathProgress, [0.7, 1.0], [140, 170])
           }
-          r="10"
+          r="14"
           fill="#00FFFF"
           stroke="#FFFFFF"
-          strokeWidth="3"
-          filter="drop-shadow(0 0 12px #00FFFF)"
+          strokeWidth="4"
+          filter="drop-shadow(0 0 16px #00FFFF)"
         />
       </svg>
 
@@ -151,26 +143,26 @@ export const MinimapZoomOverlay: React.FC<MinimapZoomOverlayProps> = ({
       <div
         style={{
           position: "absolute",
-          left: 45,
-          top: 420,
-          background: "rgba(5, 10, 22, 0.9)",
-          border: "2px solid #39FF14",
-          borderRadius: 12,
-          padding: "6px 16px",
-          boxShadow: "0 0 20px rgba(57, 255, 20, 0.4)",
+          left: 60,
+          top: 620,
+          background: "rgba(5, 10, 22, 0.94)",
+          border: "3px solid #39FF14",
+          borderRadius: 18,
+          padding: "10px 24px",
+          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(57, 255, 20, 0.5)",
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: 12,
         }}
       >
-        <span style={{ fontSize: 18 }}>🏃‍♂️</span>
+        <span style={{ fontSize: 28 }}>🏃‍♂️💨</span>
         <span
           style={{
             fontFamily: "'Montserrat', 'Rubik', sans-serif",
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: 900,
             color: "#39FF14",
-            letterSpacing: 1,
+            letterSpacing: 1.2,
           }}
         >
           RUTE MUTER: MID ➔ B ➔ SPAWN ➔ A

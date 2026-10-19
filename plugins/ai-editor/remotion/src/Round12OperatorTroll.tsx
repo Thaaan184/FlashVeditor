@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import {
   AbsoluteFill,
-  Img,
   interpolate,
   OffthreadVideo,
   spring,
@@ -74,7 +73,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
   });
 
   // ----------------------------------------------------
-  // Score 10-1 Reminder Graphic (Scene 2: Frame 720 to 900)
+  // Score 10-1 Reminder Graphic (Scene 2: Frame 720 - 900)
   // ----------------------------------------------------
   const showScoreReminder = frame >= 720 && frame <= 900;
   const scorePulse = Math.sin(frame * 0.35) * 6;
@@ -85,17 +84,17 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
   });
 
   // ----------------------------------------------------
-  // Floating Emoji Particles (Frame 2340 to 3000)
+  // Floating Emoji Particles (Frame 2240 to 3000)
   // ----------------------------------------------------
   const particles = useMemo(() => {
     const emojis = ["🤣", "💀", "🤡", "🤣", "😭", "💀", "🤣", "🔥"];
-    return Array.from({ length: 28 }).map((_, i) => ({
+    return Array.from({ length: 32 }).map((_, i) => ({
       id: i,
       emoji: emojis[i % emojis.length],
       x: 60 + ((i * 137) % (width - 120)),
-      delay: (i * 24) % 360,
-      speed: 1.1 + (i % 5) * 0.25,
-      size: 40 + (i % 4) * 16,
+      delay: (i * 20) % 360,
+      speed: 1.15 + (i % 5) * 0.25,
+      size: 42 + (i % 4) * 16,
     }));
   }, [width]);
 
@@ -113,7 +112,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
       `}</style>
 
       {/* Screen Shake Container */}
-      <ScreenShake active={isPunchline} intensity={24} startFrame={2220}>
+      <ScreenShake active={isPunchline} intensity={26} startFrame={2220}>
         {/* Dynamic Camera Zoom Wrapper */}
         <div
           style={{
@@ -132,11 +131,11 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
               objectFit: "cover",
             }}
           />
-
-          {/* Minimap Tactical Overlay (Tracked during Scene 3) */}
-          <MinimapZoomOverlay active={true} startFrame={900} endFrame={1560} />
         </div>
       </ScreenShake>
+
+      {/* Minimap Tactical Overlay (Rendered outside zoom so HUD stays razor sharp) */}
+      <MinimapZoomOverlay active={true} startFrame={900} endFrame={1560} />
 
       {/* ----------------------------------------------------
           SCENE 1: Header Badge (00:00 - 00:04 | Frame 0 - 240)
@@ -254,6 +253,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
 
       {/* ----------------------------------------------------
           SCENE 3: GunMascot Marathon Run (Frame 920 - 1560)
+          Positioned top-right beside the zoomed minimap
       ---------------------------------------------------- */}
       {frame >= 920 && frame <= 1560 && (
         <GunMascot
@@ -263,8 +263,8 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           subText="Amanin AWP dulu bos!"
           startFrame={920}
           style={{
-            top: 480,
-            left: 540,
+            top: 140,
+            right: 50,
           }}
         />
       )}
@@ -280,8 +280,8 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           subText="Muter dari B ke Spawn ke A"
           startFrame={1800}
           style={{
-            top: 960,
-            left: 360,
+            top: 920,
+            left: 200,
           }}
         />
       )}
@@ -305,25 +305,26 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
 
       {/* ----------------------------------------------------
           SCENE 4 Punchline: Triggered Rage Gun (Frame 2220 - 2940)
+          Positioned slightly above center so center text is visible
       ---------------------------------------------------- */}
       {frame >= 2220 && frame <= 2940 && (
         <GunMascot
           mode="triggered"
-          size={240}
+          size={210}
           badgeText="KENA MENTAL 💀💥"
           subText="SENJATA DI-RESET SEMUA"
           startFrame={2220}
           style={{
-            top: 680,
-            left: 420,
+            top: 400,
+            left: 435,
           }}
         />
       )}
 
       {/* ----------------------------------------------------
-          Floating Meme Emoji Rain (Frame 2340 to 3000)
+          Floating Meme Emoji Rain (Frame 2240 to 3000)
       ---------------------------------------------------- */}
-      {frame >= 2340 && (
+      {frame >= 2240 && (
         <div
           style={{
             position: "absolute",
@@ -333,7 +334,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           {particles.map((p) => {
-            const rel = frame - 2340 - p.delay;
+            const rel = frame - 2240 - p.delay;
             if (rel < 0) return null;
 
             const progress = (rel * p.speed) % 180;
