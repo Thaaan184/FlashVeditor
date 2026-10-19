@@ -8,6 +8,7 @@ import { ProductVideo, ProductPlan, productMeta } from "./product/ProductVideo";
 import { CinematicStory, CinematicStoryProps } from "./CinematicStory";
 import { CinematicBeachVlog, CinematicBeachVlogProps } from "./CinematicBeachVlog";
 import { HipdutMontage, HipdutMontageProps } from "./HipdutMontage";
+import { Round12OperatorTroll, Round12OperatorTrollProps } from "./Round12OperatorTroll";
 
 // Real values come from plan.json via --props; these only let the studio open.
 const empty: Plan = {
@@ -113,6 +114,15 @@ export const Root: React.FC = () => (
       height={1920}
       fps={60}
       durationInFrames={900}
+    />
+    <Composition
+      id="Round12OperatorTroll"
+      component={Round12OperatorTroll}
+      defaultProps={{ gameplaySrc: "gameplay.mp4" } as Round12OperatorTrollProps}
+      width={1080}
+      height={1920}
+      fps={60}
+      durationInFrames={3000}
     />
     <Composition id="Preview" component={Preview} calculateMetadata={previewMeta} width={1080} height={1920} fps={30} durationInFrames={90}
       defaultProps={{ width: 1080, height: 1920, dur: 3, card: { anim: { type: "logo_sting", props: { src: "images/logo.svg" } }, start: 0, end: 3, entrance: "pop",
