@@ -341,7 +341,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
             const y = interpolate(progress, [0, 180], [height + 80, -100]);
             const x = p.x + Math.sin(frame * 0.08 + p.id) * 35;
             const rotate = Math.sin(frame * 0.05 + p.id) * 25;
-            const op = interpolate(y, [height, height - 150, 150, -50], [0, 1, 1, 0], {
+            const op = interpolate(progress, [0, 20, 150, 180], [0, 1, 1, 0], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
             });
