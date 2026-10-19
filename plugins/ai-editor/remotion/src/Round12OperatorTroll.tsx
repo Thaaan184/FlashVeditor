@@ -9,7 +9,6 @@ import {
 } from "remotion";
 import { CartoonTextBox } from "./components/CartoonTextBox";
 import { GunCutoutMascot } from "./components/GunCutoutMascot";
-import { MinimapRouteTracker } from "./components/MinimapRouteTracker";
 
 export interface Round12OperatorTrollProps {
   gameplaySrc?: string;
@@ -226,14 +225,8 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
       )}
 
       {/* ========================================================
-          SCENE 2: THE "DORA THE EXPLORER" MINIMAP ZOOM (00:13 - 00:26 | Frame 780 - 1560)
+          SCENE 2: CLEAN MINIMAP ZOOM (00:13 - 00:26 | Frame 780 - 1560)
           ======================================================== */}
-      <MinimapRouteTracker
-        active={frame >= 780 && frame <= 1620}
-        startFrame={780}
-        endFrame={1620}
-      />
-
       {/* Subtitle Scene 2: 00:15 - 00:20 (Frame 900 - 1200) */}
       {frame >= 900 && frame < 1200 && (
         <div
@@ -255,6 +248,31 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
             shadowOffset={6}
           >
             🎵 (Nyanyi santai sambil nunggu defuse) 🎵
+          </CartoonTextBox>
+        </div>
+      )}
+
+      {/* Subtitle Scene 2 (Salah manuver): 00:20 - 00:23 (Frame 1200 - 1380) */}
+      {frame >= 1200 && frame < 1380 && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 240,
+            left: 0,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 50,
+          }}
+        >
+          <CartoonTextBox
+            bg="#00E5FF"
+            textColor="#000000"
+            fontSize={36}
+            rotation={-1}
+            shadowOffset={6}
+          >
+            "Salah manuver, salah manuver mas! 🔄🤣"
           </CartoonTextBox>
         </div>
       )}
