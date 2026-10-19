@@ -178,6 +178,10 @@ def process_video(args, root_dir):
     update_status("video", step="Writing down every word", progress=0.25, key=name)
     words_raw = edit_path / "words.raw.json"
     run_cmd([py, str(cut_scripts / "transcribe.py"), str(source), str(words_raw), "--engine", "whisper"], cwd=root_dir)
+    if not words_raw.exists() or words_raw.stat().st_size == 0:
+        print(f"[WORKER ERROR] transcribe.py failed to produce {words_raw}", flush=True)
+        update_status("video", failed=f"Transcription failed for {name}", key=name)
+        return
 
     # 2. Propose cuts & retakes
     update_status("video", step="Finding retakes and pauses", progress=0.50, key=name)
@@ -739,7 +743,7 @@ def parse_job_line(line):
         else:
             pos.append(p)
     if jtype == "video" and pos and "path" not in args:
-        args["path"] = pos[0]
+        args["path"] = " ".join(pos)
     return jtype, args
 
 

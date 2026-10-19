@@ -1694,25 +1694,26 @@ def phase(e):
 
 def job_line(j, root):
     a = j["args"]
+    import shlex
     if j["type"] == "teardown":
-        src = f"urls={a['urls']}" if a.get("urls") else f"platform={a['platform']}"
+        src = f"urls={shlex.quote(a['urls'])}" if a.get("urls") else f"platform={a['platform']}"
         return f"JOB teardown @{a['handle']} {src} take={','.join(a.get('take') or [])}" + \
-            (f" notes={a['notes']}" if a.get("notes") else "") + f" root={root}"
+            (f" notes={shlex.quote(a['notes'])}" if a.get("notes") else "") + f" root={shlex.quote(str(root))}"
     if j["type"] == "skill":
-        return f"JOB skill @{a['handle']} take={','.join(x for t in a.get('take') or [] for x in EDITPLAN_PARTS.get(t, (t,)))} root={root}"
+        return f"JOB skill @{a['handle']} take={','.join(x for t in a.get('take') or [] for x in EDITPLAN_PARTS.get(t, (t,)))} root={shlex.quote(str(root))}"
     if j["type"] == "video":
-        src = f"takes={a['takes']}" if a.get("takes") else a["path"]
-        return f"JOB video {src} as={a['as']} aspect={a['aspect']}" + (f" edit={a['edit']}" if a.get("edit") else "") + \
-            (f" script={a['script']}" if a.get("script") else "") + (f" skill={a['skill']}" if a.get("skill") else "") + \
+        src = f"takes={shlex.quote(a['takes'])}" if a.get("takes") else shlex.quote(a["path"])
+        return f"JOB video {src} as={a['as']} aspect={a['aspect']}" + (f" edit={shlex.quote(a['edit'])}" if a.get("edit") else "") + \
+            (f" script={shlex.quote(a['script'])}" if a.get("script") else "") + (f" skill={a['skill']}" if a.get("skill") else "") + \
             (f" chain={a['chain']}" if a.get("chain") else "") + (" sample=1" if a.get("sample") else "") + \
-            (f" assets={Path(a['edit']) / 'assets.json'}" if a.get("edit") and (Path(a["edit"]) / "assets.json").exists() else "") + f" root={root}"
+            (f" assets={shlex.quote(str(Path(a['edit']) / 'assets.json'))}" if a.get("edit") and (Path(a["edit"]) / "assets.json").exists() else "") + f" root={shlex.quote(str(root))}"
     if j["type"] == "skill-change":
-        return f"JOB skill-change {a['skill']} path={a['path']} text={a['text']}"
+        return f"JOB skill-change {a['skill']} path={shlex.quote(a['path'])} text={shlex.quote(a['text'])}"
     if j["type"] == "skill-new":
-        return "JOB skill-new" + (f" text={a['text']}" if a.get("text") else "")
+        return "JOB skill-new" + (f" text={shlex.quote(a['text'])}" if a.get("text") else "")
     if j["type"] == "style-change":
         return f"JOB style-change {'my-style' if a['style'] == 'mine' else a['style']}" + \
-            (f" style={a['path']}" if a.get("path") else "") + f" text={a['text']}"
+            (f" style={shlex.quote(a['path'])}" if a.get("path") else "") + f" text={shlex.quote(a['text'])}"
     return f"JOB {j['type']}"
 
 
