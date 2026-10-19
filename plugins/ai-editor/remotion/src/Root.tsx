@@ -9,6 +9,13 @@ import { CinematicStory, CinematicStoryProps } from "./CinematicStory";
 import { CinematicBeachVlog, CinematicBeachVlogProps } from "./CinematicBeachVlog";
 import { HipdutMontage, HipdutMontageProps } from "./HipdutMontage";
 import { Round12OperatorTroll, Round12OperatorTrollProps, round12Schema } from "./Round12OperatorTroll";
+import { z } from "zod";
+import * as zodTypes from "@remotion/zod-types";
+
+if (typeof window !== "undefined") {
+  (window as any).zod = z;
+  (window as any).zodTypes = zodTypes;
+}
 
 // Real values come from plan.json via --props; these only let the studio open.
 const empty: Plan = {

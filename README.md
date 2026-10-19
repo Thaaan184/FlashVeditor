@@ -1,243 +1,209 @@
 <p align="center">
-  <img src="docs/logo.svg" width="80" height="80" alt="FlashVeditor Logo">
+  <img src="plugins/ai-editor/lib/ai_editor/favicon.svg" width="90" height="90" alt="MEMASAK Logo">
 </p>
 
-<h1 align="center">FlashVeditor</h1>
+<h1 align="center">MEMASAK</h1>
 
 <p align="center">
-  <b>High-Performance AI Video Editor with Local 9Router Gateway & BYOK Architecture</b><br>
-  <i>Fork resmi dan teroptimasi dari NextWork cooked. dengan dukungan penuh gateway AI lokal, isolasi privasi, dan deployment Docker.</i>
+  <b>Modular AI Video Studio & Remotion Engine</b><br>
+  <i>Studio video editor berbasis Remotion penuh di web dengan kustomisasi per-part modular, integrasi AI gateway lokal 9Router (BYOK), transkripsi Whisper otomatis, dan arsitektur rendering headless berstandar produksi.</i>
 </p>
 
 ---
 
 ## Daftar Isi
-- [Tentang FlashVeditor](#tentang-flashveditor)
-- [Mengapa 9Router Gateway?](#mengapa-9router-gateway)
-- [Struktur & Kemampuan Engine](#struktur--kemampuan-engine)
-- [Cara Cepat: Menggunakan Docker (Rekomendasi)](#cara-cepat-menggunakan-docker-rekomendasi)
-- [Cara Manual: Bare-Metal (PC Pribadi)](#cara-manual-bare-metal-pc-pribadi)
-  - [Prasyarat Sistem](#prasyarat-sistem)
-  - [Instalasi & Bootstrap](#instalasi--bootstrap)
-  - [Konfigurasi Gateway](#konfigurasi-gateway)
-- [Alur Kerja & Penggunaan](#alur-kerja--penggunaan)
-  - [1. Web UI Mandiri (Tanpa Agent)](#1-web-ui-mandiri-tanpa-agent)
-  - [2. CLI Script Langsung](#2-cli-script-langsung)
-  - [3. Orchestrator Agent (Claude Code / Codex / Cursor)](#3-orchestrator-agent-claude-code--codex--cursor)
+- [Tentang MEMASAK](#tentang-memasak)
+- [Fitur Utama](#fitur-utama)
+  - [1. Studio Editor Interaktif Penuh (Remotion Studio)](#1-studio-editor-interaktif-penuh-remotion-studio)
+  - [2. Kustomisasi Komposisi Per-Part (Zod Schema Controls)](#2-kustomisasi-komposisi-per-part-zod-schema-controls)
+  - [3. Koleksi Komposisi Kreatif Siap Pakai](#3-koleksi-komposisi-kreatif-siap-pakai)
+  - [4. Integrasi Gateway AI Lokal 9Router (BYOK & Zero-Leakage)](#4-integrasi-gateway-ai-lokal-9router-byok--zero-leakage)
+  - [5. Pipeline Transkripsi & Pemotongan Cerdas](#5-pipeline-transkripsi--pemotongan-cerdas)
+  - [6. Desain Visual Anti-AI-Slop (Neo-Brutalist & Comic Pop-Art)](#6-desain-visual-anti-ai-slop-neo-brutalist--comic-pop-art)
+- [Struktur Direktori Repositori](#struktur-direktori-repositori)
+- [Panduan Penggunaan](#panduan-penggunaan)
+  - [Cara 1: Remotion Studio Interaktif (Rekomendasi Kreator)](#cara-1-remotion-studio-interaktif-rekomendasi-kreator)
+  - [Cara 2: Docker Container (VM & Produksi)](#cara-2-docker-container-vm--produksi)
+  - [Cara 3: Bare-Metal Local (CLI & Scripting)](#cara-3-bare-metal-local-cli--scripting)
+- [Konfigurasi Gateway & Autentikasi](#konfigurasi-gateway--autentikasi)
 - [Audit & Integritas Sistem](#audit--integritas-sistem)
 - [Lisensi & Atribusi](#lisensi--atribusi)
 
 ---
 
-## Tentang FlashVeditor
+## Tentang MEMASAK
 
-**FlashVeditor** adalah engine penyunting video otomatis untuk format *talking-head*, video pendek (*short-form / reels / TikTok*), dan materi edukasi/bisnis.
+**MEMASAK** adalah platform studio video editor bertenaga **Remotion 4** dan **React 19** yang dirancang untuk produksi konten video pendek (*TikTok, Instagram Reels, YouTube Shorts*) serta video presentasi teknis tingkat tinggi.
 
-Dua tugas utama engine:
-1. **Pembersihan Rekaman (Cut Engine):** Mengeliminasi kata salah (*retakes*), jeda panjang (*awkward pauses*), dan gumaman (*filler words*) menggunakan model speech-to-text Whisper lokal.
-2. **Penerapan Gaya Visual (Style & Render Engine):** Mengukur tempo potongan, zoom kamera dinamis, tipografi subtitle per kata, animasi kartu overlay, dan sound effect (SFX) dari profil kreator referensi, lalu merendernya dalam format MP4 definisi tinggi via engine Remotion 4.
-
-Proyek ini telah direkayasa ulang pada branch `feat/9router-gateway` agar seluruh pemrosesan AI (analisis visual teardown dan orkestrasi agent) dialihkan ke gateway lokal **9Router**.
-
----
-
-## Mengapa 9Router Gateway?
-
-Pada implementasi upstream asli, sistem memiliki keterikatan (*hardcoded vendor lock-in*) ke Google AI Studio dan Anthropic Direct API. FlashVeditor mengalihkan seluruh lalu lintas ke gateway lokal 9Router (`http://localhost:20128`):
-
-- **Zero Data Leakage:** Seluruh request prompt, video frames, dan log berjalan melalui gateway lokal privat Anda.
-- **Dukungan Multi-Model Fleksibel (BYOK):**
-  - **Teardown Visual Multimodal:** Menggunakan `ag/gemini-3.8-flash-high` melalui endpoint native `/v1beta/` dengan sampling frame JPEG base64.
-  - **Agent Orchestrator:** Menggunakan model reasoning pilihan seperti `ag/claude-opus-4-6-thinking` atau `ag/claude-sonnet-4-6` via endpoint SSE streaming `/v1/messages`.
-- **Ketahanan Jaringan:** Dilengkapi algoritma *tolerant JSON parser*, auto-retry pada status 429, dan proteksi kegagalan parsing format markdown.
+Berbeda dari alur editor video AI kaku yang berbasis template potong statis, MEMASAK memberikan kendali visual penuh kepada kreator melalui antarmuka web:
+1. **Pratinjau Nyata & Scrubbing Presisi:** Navigasi timeline frame-by-frame (60fps / 30fps), waveform audio sinkron, dan kanvas pratinjau responsif.
+2. **Modular Per Part:** Setiap layer visual (teks hook, zoom kamera, warna, maskot reaksi, stiker konfeti, efek guncangan layar) diatur lewat parameter terstruktur (*schema-driven props*).
+3. **Privasi & Fleksibilitas Model:** Bebas dari keterikatan vendor tunggal; terhubung ke gateway **9Router** lokal untuk analisis multimodal dan orkestrasi agent.
 
 ---
 
-## Struktur & Kemampuan Engine
+## Fitur Utama
+
+### 1. Studio Editor Interaktif Penuh (Remotion Studio)
+- Didukung langsung oleh engine resmi `@remotion/studio`.
+- Menampilkan pohon komponen visual React secara langsung di peramban web.
+- Dilengkapi alat playback pro: kontrol kecepatan (0.5x s/d 2x), in/out point marker, layer snapping, dan pemantau audio multi-track.
+
+### 2. Kustomisasi Komposisi Per-Part (Zod Schema Controls)
+Setiap elemen diatur secara modular melalui skema validasi tipe data Zod dan `@remotion/zod-types`:
+- **Part 1 (Intro Hook):** Teks kartu pembuka, warna latar belakang, visibilitas badge sub-callout.
+- **Part 2 (Minimap & Camera Control):** Slider faktor perbesaran (*scale* 1.0x s/d 4.0x), titik fokus kamera (*origin X/Y* %), durasi & waktu trigger perbesaran.
+- **Part 3 (Dynamic Subtitles):** Ukuran tipografi, palet warna teks, latar belakang boks subtitle.
+- **Part 4 (Reaction Mascot):** Pengalih visibilitas maskot stiker, ukuran perbesaran, animasi fisika kartun bertahap (*stepped 12fps*).
+- **Part 5 (Climax & Punchline):** Teks teriakan punchline, intensitas guncangan kanvas (*screen shake* 0 s/d 50), jumlah dan pengalih stiker konfeti meme.
+
+### 3. Koleksi Komposisi Kreatif Siap Pakai
+- **`Round12OperatorTroll`:** Komposisi meme gaming Valorant 60fps dengan punch-in minimap bersih, tipografi komik tebal, maskot kartun bergerak, dan efek guncangan kanvas.
+- **`HipdutMontage`:** Komposisi gerak visual beat kendang koplo 130 BPM, transisi camcorder, marquee latar dinamis, stiker terisolasi, dan tipografi kinetik.
+- **`CinematicStory`:** Komposisi cerita naratif sinematik bernuansa HUD reticle telemetri futuristik, audio stem ambien bertingkat, dan subtitle kinetik.
+- **`CinematicBeachVlog`:** Komposisi estetika vlog pantai dengan rasio letterbox sinematik, efek sun flare procedural, dan transisi pudar lembut.
+- **`StyleEdit`:** Komposisi adaptif multi-layer untuk penyesuaian gaya visual dari hasil analisis profil kreator referensi.
+
+### 4. Integrasi Gateway AI Lokal 9Router (BYOK & Zero-Leakage)
+- Menghubungkan seluruh proses inferensi AI ke 9Router lokal (`http://localhost:20128`):
+  - **Teardown Visual Multimodal:** Analisis struktur visual video menggunakan `ag/gemini-3.8-flash-high` melalui endpoint `/v1beta/` dengan ekstraksi frame JPEG base64.
+  - **Review & Skill Generator:** Pembuatan rule visual dan integrasi revisi catatan pengguna via endpoint `/v1/chat/completions` atau `/v1/messages`.
+- Dilengkapi *tolerant JSON parser*, penanganan status 429 otomatis, dan proteksi kegagalan parsing markdown.
+
+### 5. Pipeline Transkripsi & Pemotongan Cerdas
+- Ekstraksi transkripsi dialog per kata menggunakan engine **Whisper** terintegrasi.
+- Deteksi retake dan eliminasi jeda hening secara otomatis melalui pemodelan timeline non-destruktif.
+- Output potongan video bersih dalam format H.264 AAC.
+
+### 6. Desain Visual Anti-AI-Slop (Neo-Brutalist & Comic Pop-Art)
+Mengeliminasi tampilan AI generik (gradien ungu-biru lembut, glassmorphism buram, font tipis tanpa kontras):
+- **Border Hitam Tegas:** Garis tepi 4px - 6px solid `#000000`.
+- **Hard Offset Shadow:** Bayangan tegas 6px - 10px tanpa efek blur (`boxShadow: 6px 6px 0px #000000`).
+- **Stepped Stop-Motion Feel:** Kuantisasi pergerakan stiker dan maskot pada frame rate 12-15fps (`Math.floor(frame / 4)`).
+- **Tipografi Komik Berkarakter:** Menggunakan font *Bangers*, *Luckiest Guy*, dan *Fredoka* dengan kontur teks tebal.
+
+---
+
+## Struktur Direktori Repositori
 
 ```
 FlashVeditor/
 ├── plugins/
-│   ├── ai-editor/             # Core Video Editor
-│   │   ├── lib/ai_editor/     # Server review, home server, askhook, library
-│   │   ├── remotion/          # Remotion 4 React rendering engine (H.264 MP4)
-│   │   └── skills/
-│   │       ├── cut/           # Whisper transcribe + timeline builder + FFmpeg cutter
-│   │       ├── style-edit/    # Layout generator, card animation, audio ducking, renderer
-│   │       └── setup/         # System doctor & automated bootstrapper
-│   └── creator-teardown/      # Visual Analysis Plugin
-│       └── skills/
-│           └── creator-teardown/scripts/gemini.py # 9Router Gemini Gateway Client
-├── .audit/                    # Suite audit, kontrak pengujian (T-00 s/d T-13), dan guard
-├── Dockerfile                 # Konfigurasi containerized runtime lengkap
-├── docker-compose.yml         # 1-click startup compose
-└── docker-entrypoint.sh       # Auto-provisioning environment & server launcher
+│   ├── ai-editor/                         # Core Studio Engine
+│   │   ├── lib/ai_editor/                 # Server web review, home orchestrator, worker daemon
+│   │   │   ├── home.py                    # Server dashboard, job queue, thumbnail handler
+│   │   │   ├── worker.py                  # Daemon background pemroses audio, cut, dan render
+│   │   │   ├── review.py                  # Server preview interaktif & reverse proxy
+│   │   │   ├── home.html                  # Antarmuka dashboard MEMASAK
+│   │   │   └── review.html                # Antarmuka studio review & revisi
+│   │   ├── remotion/                      # Remotion 4 React Rendering Engine
+│   │   │   ├── src/
+│   │   │   │   ├── Root.tsx               # Registrasi komposisi & Zod schema props
+│   │   │   │   ├── Round12OperatorTroll.tsx # Komposisi meme gaming kartun 60fps
+│   │   │   │   ├── HipdutMontage.tsx      # Komposisi mograph hipdut koplo 60fps
+│   │   │   │   ├── CinematicStory.tsx     # Komposisi sinematik HUD telemetri
+│   │   │   │   ├── CinematicBeachVlog.tsx # Komposisi vlog pantai letterbox
+│   │   │   │   ├── StyleEdit.tsx          # Komposisi adaptif multi-layer
+│   │   │   │   └── components/            # Komponen visual modular
+│   │   │   │       ├── CartoonTextBox.tsx # Boks teks neo-brutalist komik
+│   │   │   │       ├── GunCutoutMascot.tsx # Maskot reaksi animasi 12fps
+│   │   │   │       └── DynamicSubtitles.tsx # Subtitle kinetik tersinkronisasi
+│   │   │   └── public/                    # Aset video, audio stem, dan stiker
+│   │   └── skills/                        # Skill pemrosesan media
+│   │       ├── cut/                       # Whisper transcription & FFmpeg cutter
+│   │       └── style-edit/                # Perencana layout & pipeline render
+│   └── creator-teardown/                  # Ekstraksi visual referensi kreator
+├── .audit/                                # Suite kontrak audit (T-00 s/d T-35)
+├── docs/                                  # Dokumentasi perubahan & panduan rollback
+├── Dockerfile                             # Konfigurasi container runtime headless
+├── docker-compose.yml                     # Konfigurasi deployment multi-port Docker
+└── docker-entrypoint.sh                   # Inisialisasi container & supervisor loop
 ```
 
 ---
 
-## Cara Cepat: Menggunakan Docker (Rekomendasi)
+## Panduan Penggunaan
 
-Metode termudah untuk menjalankan FlashVeditor di PC pribadi (Linux, macOS, atau Windows dengan Docker Desktop) tanpa perlu mengonfigurasi Python venv atau Node.js manual di sistem host.
+### Cara 1: Remotion Studio Interaktif (Rekomendasi Kreator)
+Buka dan jalankan studio editor visual langsung di browser lokal Anda:
 
-### 1. Prasyarat Docker
-- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/) terpasang.
-- Gateway 9Router telah berjalan di PC host pada port `20128`.
-
-### 2. Jalankan Kontainer
 ```bash
-# Clone branch feat/9router-gateway
-git clone -b feat/9router-gateway https://github.com/Thaaan184/FlashVeditor.git
+# Masuk ke direktori Remotion
+cd plugins/ai-editor/remotion
+
+# Jalankan Remotion Studio
+npm run studio
+```
+
+Studio akan terbuka otomatis di `http://localhost:3000` (atau port yang ditentukan). Anda dapat:
+- Memilih komposisi video di panel sebelah kiri.
+- Mengatur teks, warna, ukuran, dan perbesaran kamera di panel sebelah kanan.
+- Melakukan scrubbing timeline secara presisi sebelum melakukan render.
+
+---
+
+### Cara 2: Docker Container (VM & Produksi)
+Jalankan studio video headless di server atau Docker VM dengan supervisor loop mandiri:
+
+```bash
+# Clone branch main
+git clone https://github.com/Thaaan184/FlashVeditor.git
 cd FlashVeditor
 
-# Nyalakan kontainer di latar belakang
+# Nyalakan kontainer
 docker compose up -d
 ```
 
-*Catatan: Kontainer otomatis menghubungkan engine video ke 9Router di PC host via `host.docker.internal:20128`.*
-
-### 3. Akses Antarmuka Web
-Buka browser Anda dan akses:
-```
-http://localhost:47821
-```
-Letakkan file video mentah Anda di direktori `./library` pada host; file tersebut akan terbaca otomatis di dalam antarmuka FlashVeditor.
-
-### 4. Perintah Berguna Kontainer
-- Melihat log aktivitas server: `docker compose logs -f`
-- Mematikan kontainer: `docker compose down`
-- Masuk ke terminal kontainer: `docker compose exec flashveditor bash`
+- Dashboard MEMASAK aktif pada: `http://localhost:47821`
+- Remotion Studio aktif pada port: `47825`
+- Supervisor loop di latar belakang otomatis memantau daemon `worker.py` dan memperbarui status antarmuka secara realtime.
 
 ---
 
-## Cara Manual: Bare-Metal (PC Pribadi)
-
-Gunakan metode ini jika ingin menjalankan engine langsung di sistem operasi tanpa lapisan kontainerisasi.
-
-### Prasyarat Sistem
-1. **Python 3.10 atau lebih baru** (disarankan Python 3.11).
-2. **Node.js 20 LTS atau lebih baru** (disarankan Node.js 22).
-3. **FFmpeg & FFprobe 7.0+** (pastikan executable berada pada `PATH` sistem).
-4. **9Router** aktif di `http://localhost:20128`.
-
-### Instalasi & Bootstrap
+### Cara 3: Bare-Metal Local (CLI & Scripting)
+Jalankan rendering video headless melalui baris perintah CLI:
 
 ```bash
-git clone -b feat/9router-gateway https://github.com/Thaaan184/FlashVeditor.git
-cd FlashVeditor
+# Masuk ke direktori engine
+cd plugins/ai-editor/remotion
 
-# Jalankan bootstrap otomatis (menginstal venv, model Whisper, dan dependensi Remotion)
-python3 plugins/ai-editor/skills/setup/scripts/setup.py bootstrap
+# Render komposisi spesifik ke file MP4 definisi tinggi
+npx remotion render src/index.ts Round12OperatorTroll output.mp4 --concurrency=8
 ```
-
-Periksa kesiapan sistem:
-```bash
-python3 plugins/ai-editor/skills/setup/scripts/setup.py doctor
-```
-Pastikan seluruh dependensi bertanda `ok`.
-
-### Konfigurasi Gateway
-
-#### A. Konfigurasi Teardown Visual Gemini (9Router)
-Buat file konfigurasi rahasia lokal di `~/.config/creator-teardown/.env`:
-```bash
-mkdir -p ~/.config/creator-teardown
-cat << 'EOF' > ~/.config/creator-teardown/.env
-GEMINI_BASE_URL=http://localhost:20128
-GEMINI_API_VERSION=v1beta
-GEMINI_AUTH_MODE=bearer
-GEMINI_MODEL=ag/gemini-3.8-flash-high
-GEMINI_API_KEY=FlashVeditor
-EOF
-chmod 600 ~/.config/creator-teardown/.env
-```
-*(Ganti `FlashVeditor` dengan API key 9Router Anda jika menggunakan autentikasi spesifik).*
-
-#### B. Konfigurasi Orchestrator Claude Code (Opsional)
-Jika Anda menggunakan Claude Code sebagai agen pemotong:
-```bash
-cp .claude/settings.local.json.example .claude/settings.local.json
-```
-Isi variabel `ANTHROPIC_AUTH_TOKEN` pada file `.claude/settings.local.json` dengan API key 9Router Anda.
 
 ---
 
-## Alur Kerja & Penggunaan
+## Konfigurasi Gateway & Autentikasi
 
-### 1. Web UI Mandiri (Tanpa Agent)
-Jalankan server aplikasi lokal:
-```bash
-python3 plugins/ai-editor/lib/ai_editor/home.py serve
-```
-Buka URL ber-token yang tercetak di terminal pada browser Anda. Anda dapat melakukan *drag-and-drop* video, memilih preset style, meninjau hasil pemotongan kata, serta mengunduh hasil render final.
+Untuk menghubungkan MEMASAK ke gateway 9Router lokal:
 
-### 2. CLI Script Langsung
-Anda dapat mengeksekusi pipeline penyuntingan per tahapan secara langsung melalui script Python di venv:
+1. Buat atau perbarui file environment di `~/.config/creator-teardown/.env` (atau file `.env` di root repositori):
+   ```bash
+   GEMINI_BASE_URL=http://localhost:20128
+   GEMINI_API_VERSION=v1beta
+   GEMINI_AUTH_MODE=bearer
+   GEMINI_MODEL=ag/gemini-3.8-flash-high
+   GEMINI_API_KEY=MEMASAK
+   ```
 
-```bash
-# Aktifkan virtualenv bawaan
-source ~/.ai-video-editor/venv/bin/activate
-
-# 1. Ekstraksi transkripsi per kata menggunakan Whisper
-python3 plugins/ai-editor/skills/cut/scripts/transcribe.py input.mp4 words.json --engine whisper
-
-# 2. Analisis keputusan pemotongan timeline
-python3 plugins/ai-editor/skills/cut/scripts/build_timeline.py words.json decisions.json
-
-# 3. Potong video dengan FFmpeg
-python3 plugins/ai-editor/skills/cut/scripts/render.py input.mp4 decisions.json cut.mp4
-
-# 4. Analisis visual referensi kreator via 9Router Gemini
-python3 plugins/creator-teardown/skills/creator-teardown/scripts/gemini.py look referensi.mp4
-
-# 5. Susun rencana visual (captions, zoom, overlay cards)
-python3 plugins/ai-editor/skills/style-edit/scripts/plan.py style.json captions.json --out plan.json
-
-# 6. Render hasil video final dengan Remotion engine
-python3 plugins/ai-editor/skills/style-edit/scripts/edit.py render folder_proyek/
-```
-
-### 3. Orchestrator Agent (Claude Code / Codex / Cursor)
-
-FlashVeditor mendukung berbagai cara menjalankan agent:
-
-#### Way 1: open this folder in Claude Code (Direkomendasikan untuk pengembangan lokal)
-Buka terminal pada direktori root repositori, lalu jalankan:
-```bash
-claude
-```
-Ketik perintah percakapan, misalnya:
-> *"Tolong potong video take1.mp4 dan berikan style sesuai referensi kreator @sample"*
-
-Agent akan membaca panduan `AGENTS.md` / `CLAUDE.md`, mengoordinasikan skill `cut` dan `style-edit`, serta mengarahkan seluruh panggilan model AI ke 9Router lokal tanpa keluar dari lingkungan privat Anda.
-
-#### Way 2: Pasang via Plugin Marketplace
-Jika ingin memakai editor dari direktori proyek lain pada Claude Code:
-```bash
-/plugin marketplace add nextwork-projects/ai-video-editor-cooked
-```
-
-#### Way 3: Agent CLI Lain (Codex, Cursor, Gemini CLI)
-Bagi pengguna agen dengan standard Agent Skills CLI:
-```bash
-npx skills add nextwork-projects/ai-video-editor-cooked
-```
+2. Jalankan pemeriksaan kesiapan dependensi sistem:
+   ```bash
+   python3 plugins/ai-editor/skills/setup/scripts/setup.py doctor
+   ```
 
 ---
 
 ## Audit & Integritas Sistem
 
-Repositori ini mematuhi standar verifikasi ketat yang terdokumentasi dalam direktori `.audit/`:
-
-- **Jaminan Reversibilitas 100%:** Seluruh perubahan diverifikasi dapat dibatalkan sewaktu-waktu. Panduan rollback tersedia lengkap di [`docs/REVERT.md`](docs/REVERT.md).
-- **Verifikasi Multi-Agen Tanpa Bias:** Pengujian keamanan dan *fault injection* (F-01 s/d F-13) pada Task T-12 diaudit oleh sub-agen Red-Team independen dengan status kelulusan `verdict: accept`.
-- **Audit Bebas Rahasia (Zero Secrets):** Seluruh file evidence dan commit history diinspeksi secara otomatis guna memastikan tidak ada API key atau kredensial riil yang terekspos.
-- **Indeks Perubahan Resmi:** Log setiap fase dan perbaikan terdaftar pada [`docs/CHANGES.md`](docs/CHANGES.md).
+Repositori ini dikelola dengan standar integritas ketat yang terdokumentasi di folder `.audit/`:
+- **Pemeriksaan Kontrak:** Setiap commit divalidasi oleh skrip `.audit/check_docs.py` dengan metadata `Change-Doc` dan `Verdict: accept`.
+- **Zero Secrets:** Bebas dari hardcoded API key, token rahasia, maupun kredensial privat.
+- **Reversibilitas Penuh:** Seluruh riwayat perubahan tercatat di [`docs/CHANGES.md`](docs/CHANGES.md) dan dapat di-rollback mengacu pada [`docs/REVERT.md`](docs/REVERT.md).
 
 ---
 
 ## Lisensi & Atribusi
 
-- **FlashVeditor Modifications:** Hak Cipta © 2026 PT Nalar Cerdas Teknologi / Thaaan184. Didistribusikan di bawah lisensi MIT.
-- **Original Upstream:** Proyek ini merupakan pengembangan dari `nextwork-projects/ai-video-editor-cooked` oleh NextWork (Lisensi MIT).
-- **HyperFrames:** Komponen motion dan tipografi menyertakan atribusi HyperFrames (Lisensi Apache-2.0). Lihat file `NOTICE` untuk informasi lisensi lengkap pihak ketiga.
+- **MEMASAK Modifications:** Hak Cipta © 2026 PT Nalar Cerdas Teknologi / Thaaan184. Didistribusikan di bawah lisensi MIT.
+- **Upstream Engine:** Berbasis engine terbuka `nextwork-projects/ai-video-editor-cooked` (Lisensi MIT).
+- **Remotion:** Menggunakan framework rendering video berbasis React `@remotion` (Lisensi Perusahaan/Inovator Remotion).
