@@ -7,18 +7,76 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { z } from "zod";
+import { zColor } from "@remotion/zod-types";
 import { CartoonTextBox } from "./components/CartoonTextBox";
 import { GunCutoutMascot } from "./components/GunCutoutMascot";
 
-export interface Round12OperatorTrollProps {
-  gameplaySrc?: string;
-}
+export const round12Schema = z.object({
+  gameplaySrc: z.string().default("gameplay.mp4").describe("Source Video"),
+  
+  // Part 1: Scene 1 Intro Hook & Title
+  showIntroTitle: z.boolean().default(true).describe("Part 1: Show Intro Title"),
+  introTitleText: z.string().default("POV: TEMEN LAMA GAK MAIN VALO... 🎮").describe("Part 1: Title Card Text"),
+  introTitleBg: zColor().default("#FFDE00").describe("Part 1: Title Box Background"),
+  showIntroSub: z.boolean().default(true).describe("Part 1: Show Setup Sub-Callout"),
+  introSubText: z.string().default("RONDE AMAN! SAATNYA NGE-TROLL... 😈").describe("Part 1: Sub-Callout Text"),
+  introSubBg: zColor().default("#00E5FF").describe("Part 1: Sub-Callout Background"),
+
+  // Part 2: Scene 2 Minimap Zoom & Camera
+  minimapZoomScale: z.number().min(1.0).max(4.0).step(0.1).default(2.3).describe("Part 2: Minimap Zoom Scale"),
+  minimapOriginX: z.number().min(0).max(100).step(1).default(22).describe("Part 2: Minimap Center X (%)"),
+  minimapOriginY: z.number().min(0).max(100).step(1).default(12).describe("Part 2: Minimap Center Y (%)"),
+  minimapStartSec: z.number().min(0).max(50).step(0.5).default(13.0).describe("Part 2: Zoom Start Time (s)"),
+  minimapEndSec: z.number().min(0).max(50).step(0.5).default(27.0).describe("Part 2: Zoom End Time (s)"),
+
+  // Part 3: Subtitles & Font Styling
+  subtitleFontSize: z.number().min(20).max(60).step(2).default(36).describe("Part 3: Subtitle Font Size"),
+  subtitleColor: zColor().default("#000000").describe("Part 3: Subtitle Text Color"),
+  subtitleBg: zColor().default("#FFFDF0").describe("Part 3: Subtitle Box Background"),
+
+  // Part 4: Reaction Mascot
+  showMascot: z.boolean().default(true).describe("Part 4: Show Mascot Reactions"),
+  mascotScale: z.number().min(0.5).max(2.5).step(0.1).default(1.0).describe("Part 4: Mascot Scale"),
+
+  // Part 5: Punchline & Climax
+  punchlineRageText: z.string().default("EH! B*BI!! 🐷🤬").describe("Part 5: Punchline Rage Text"),
+  punchlineReasonText: z.string().default("PADAHAL GANTI HALF!! 💀🤣").describe("Part 5: Punchline Reason Text"),
+  punchlineBgColor: zColor().default("#FF2A2A").describe("Part 5: Punchline Box Color"),
+  shakeIntensity: z.number().min(0).max(50).step(2).default(24).describe("Part 5: Screen Shake Intensity"),
+  showConfetti: z.boolean().default(true).describe("Part 5: Falling Meme Confetti"),
+  confettiCount: z.number().min(4).max(48).step(2).default(24).describe("Part 5: Confetti Count"),
+});
+
+export type Round12OperatorTrollProps = z.infer<typeof round12Schema>;
 
 export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
   gameplaySrc = "gameplay.mp4",
+  showIntroTitle = true,
+  introTitleText = "POV: TEMEN LAMA GAK MAIN VALO... 🎮",
+  introTitleBg = "#FFDE00",
+  showIntroSub = true,
+  introSubText = "RONDE AMAN! SAATNYA NGE-TROLL... 😈",
+  introSubBg = "#00E5FF",
+  minimapZoomScale = 2.3,
+  minimapOriginX = 22,
+  minimapOriginY = 12,
+  minimapStartSec = 13.0,
+  minimapEndSec = 27.0,
+  subtitleFontSize = 36,
+  subtitleColor = "#000000",
+  subtitleBg = "#FFFDF0",
+  showMascot = true,
+  mascotScale = 1.0,
+  punchlineRageText = "EH! B*BI!! 🐷🤬",
+  punchlineReasonText = "PADAHAL GANTI HALF!! 💀🤣",
+  punchlineBgColor = "#FF2A2A",
+  shakeIntensity = 24,
+  showConfetti = true,
+  confettiCount = 24,
 }) => {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
+  const { width, height, fps } = useVideoConfig();
 
   // 12fps Stepped Frame (Stop-motion feel for cartoon physics)
   const stepped = Math.floor(frame / 4);
@@ -26,19 +84,22 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
   // -------------------------------------------------------------
   // CAMERA ZOOM & SHAKE CONTROLLER
   // -------------------------------------------------------------
-  // Scene 2 Minimap Zoom: 00:13 - 00:26 (Frame 780 - 1560)
-  // Scene 4 Buy Phase Creep Zoom: 00:33 - 00:37.5 (Frame 1980 - 2250)
+  const zoomStartFrame = Math.round(minimapStartSec * fps);
+  const zoomEndFrame = Math.round(minimapEndSec * fps);
+  const zoomInDuration = Math.round(1.0 * fps);
+  const zoomOutDuration = Math.round(1.0 * fps);
+
   let cameraScale = 1.0;
   let cameraOrigin = "center center";
 
-  if (frame >= 780 && frame <= 1620) {
+  if (frame >= zoomStartFrame && frame <= zoomEndFrame + zoomOutDuration) {
     cameraScale = interpolate(
       frame,
-      [780, 840, 1560, 1620],
-      [1.0, 2.3, 2.3, 1.0],
+      [zoomStartFrame, zoomStartFrame + zoomInDuration, zoomEndFrame, zoomEndFrame + zoomOutDuration],
+      [1.0, minimapZoomScale, minimapZoomScale, 1.0],
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
     );
-    cameraOrigin = "22% 12%";
+    cameraOrigin = `${minimapOriginX}% ${minimapOriginY}%`;
   } else if (frame >= 1980 && frame < 2250) {
     cameraScale = interpolate(frame, [1980, 2250], [1.0, 1.25], {
       extrapolateLeft: "clamp",
@@ -52,22 +113,23 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
   let shakeY = 0;
   let shakeRot = 0;
 
-  if (frame >= 2250 && frame <= 2800) {
-    const shakeIntensity = interpolate(frame, [2250, 2340, 2750, 2800], [0, 24, 14, 0], {
+  if (frame >= 2250 && frame <= 2800 && shakeIntensity > 0) {
+    const activeShake = interpolate(frame, [2250, 2340, 2750, 2800], [0, shakeIntensity, shakeIntensity * 0.6, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    shakeX = (stepped % 2 === 0 ? 1 : -1) * shakeIntensity;
-    shakeY = ((stepped + 1) % 2 === 0 ? 1 : -1) * (shakeIntensity * 0.7);
-    shakeRot = (stepped % 2 === 0 ? 1 : -1) * (shakeIntensity * 0.15);
+    shakeX = (stepped % 2 === 0 ? 1 : -1) * activeShake;
+    shakeY = ((stepped + 1) % 2 === 0 ? 1 : -1) * (activeShake * 0.7);
+    shakeRot = (stepped % 2 === 0 ? 1 : -1) * (activeShake * 0.15);
   }
 
   // -------------------------------------------------------------
   // CONFETTI / CARTOON FALLING STICKERS (Scene 4: Frame 2280 - 3000)
   // -------------------------------------------------------------
   const fallingStickers = useMemo(() => {
+    if (!showConfetti) return [];
     const items = ["🐷", "💀", "🤡", "🤣", "💥", "💣", "💩"];
-    return Array.from({ length: 24 }).map((_, i) => ({
+    return Array.from({ length: confettiCount }).map((_, i) => ({
       id: i,
       char: items[i % items.length],
       x: 60 + ((i * 41) % (width - 140)),
@@ -76,7 +138,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
       size: 48 + (i % 4) * 14,
       rotOffset: (i * 37) % 360,
     }));
-  }, [width]);
+  }, [width, showConfetti, confettiCount]);
 
   return (
     <AbsoluteFill
@@ -117,7 +179,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           SCENE 1: WIN ROUND & THE TROLL SETUP (00:00 - 00:13 | Frame 0 - 780)
           ======================================================== */}
       {/* 00:00 - 00:06: Comic Title Card */}
-      {frame >= 0 && frame < 360 && (
+      {showIntroTitle && frame >= 0 && frame < 360 && (
         <div
           style={{
             position: "absolute",
@@ -130,18 +192,18 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           <CartoonTextBox
-            bg="#FFDE00"
+            bg={introTitleBg}
             fontSize={42}
             rotation={-2}
             shadowOffset={8}
           >
-            POV: TEMEN LAMA GAK MAIN VALO... 🎮
+            {introTitleText}
           </CartoonTextBox>
         </div>
       )}
 
       {/* 00:08 - 00:10: Musuh Terakhir Mati / Round Secure */}
-      {frame >= 480 && frame < 600 && (
+      {showIntroSub && frame >= 480 && frame < 600 && (
         <div
           style={{
             position: "absolute",
@@ -154,13 +216,13 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           <CartoonTextBox
-            bg="#00E5FF"
+            bg={introSubBg}
             fontSize={40}
             rotation={3}
             shadowOffset={8}
             burst={true}
           >
-            RONDE AMAN! SAATNYA NGE-TROLL... 😈
+            {introSubText}
           </CartoonTextBox>
         </div>
       )}
@@ -241,9 +303,9 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           <CartoonTextBox
-            bg="#FFFDF0"
-            textColor="#000000"
-            fontSize={36}
+            bg={subtitleBg}
+            textColor={subtitleColor}
+            fontSize={subtitleFontSize}
             rotation={1}
             shadowOffset={6}
           >
@@ -268,7 +330,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           <CartoonTextBox
             bg="#00E5FF"
             textColor="#000000"
-            fontSize={36}
+            fontSize={subtitleFontSize}
             rotation={-1}
             shadowOffset={6}
           >
@@ -327,9 +389,11 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           >
             Capek lari keliling map tapi tangan kosong 🤡💦
           </CartoonTextBox>
-          <div style={{ marginTop: 16 }}>
-            <GunCutoutMascot mode="running" size={170} sweat={true} />
-          </div>
+          {showMascot && (
+            <div style={{ marginTop: 16 }}>
+              <GunCutoutMascot mode="running" size={Math.round(170 * mascotScale)} sweat={true} />
+            </div>
+          )}
         </div>
       )}
 
@@ -350,7 +414,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
             zIndex: 60,
           }}
         >
-          <GunCutoutMascot mode="thinking" size={230} />
+          {showMascot && <GunCutoutMascot mode="thinking" size={Math.round(230 * mascotScale)} />}
           <div style={{ marginTop: 24 }}>
             <CartoonTextBox
               bg="#FFFDF0"
@@ -379,17 +443,17 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
             zIndex: 80,
           }}
         >
-          <GunCutoutMascot mode="triggered" size={260} />
+          {showMascot && <GunCutoutMascot mode="triggered" size={Math.round(260 * mascotScale)} />}
           <div style={{ marginTop: 32 }}>
             <CartoonTextBox
-              bg="#FF2A2A"
+              bg={punchlineBgColor}
               textColor="#FFFDF0"
               fontSize={68}
               rotation={stepped % 2 === 0 ? -5 : 5}
               shadowOffset={12}
               burst={true}
             >
-              EH! B*BI!! 🐷🤬
+              {punchlineRageText}
             </CartoonTextBox>
           </div>
         </div>
@@ -436,14 +500,14 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           <CartoonTextBox
-            bg="#FF2A2A"
+            bg={punchlineBgColor}
             textColor="#FFFDF0"
             fontSize={62}
             rotation={3}
             shadowOffset={12}
             burst={true}
           >
-            PADAHAL GANTI HALF!! 💀🤣
+            {punchlineReasonText}
           </CartoonTextBox>
           <CartoonTextBox
             bg="#00E5FF"
@@ -472,7 +536,7 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
         >
           <CartoonTextBox
             bg="#FFDE00"
-            fontSize={36}
+            fontSize={subtitleFontSize}
             rotation={2}
             shadowOffset={6}
           >
@@ -494,8 +558,9 @@ export const Round12OperatorTroll: React.FC<Round12OperatorTrollProps> = ({
           }}
         >
           <CartoonTextBox
-            bg="#FFFDF0"
-            fontSize={36}
+            bg={subtitleBg}
+            textColor={subtitleColor}
+            fontSize={subtitleFontSize}
             rotation={-2}
             shadowOffset={6}
           >

@@ -8,7 +8,7 @@ import { ProductVideo, ProductPlan, productMeta } from "./product/ProductVideo";
 import { CinematicStory, CinematicStoryProps } from "./CinematicStory";
 import { CinematicBeachVlog, CinematicBeachVlogProps } from "./CinematicBeachVlog";
 import { HipdutMontage, HipdutMontageProps } from "./HipdutMontage";
-import { Round12OperatorTroll, Round12OperatorTrollProps } from "./Round12OperatorTroll";
+import { Round12OperatorTroll, Round12OperatorTrollProps, round12Schema } from "./Round12OperatorTroll";
 
 // Real values come from plan.json via --props; these only let the studio open.
 const empty: Plan = {
@@ -118,7 +118,32 @@ export const Root: React.FC = () => (
     <Composition
       id="Round12OperatorTroll"
       component={Round12OperatorTroll}
-      defaultProps={{ gameplaySrc: "gameplay.mp4" } as Round12OperatorTrollProps}
+      schema={round12Schema}
+      defaultProps={{
+        gameplaySrc: "gameplay.mp4",
+        showIntroTitle: true,
+        introTitleText: "POV: TEMEN LAMA GAK MAIN VALO... 🎮",
+        introTitleBg: "#FFDE00",
+        showIntroSub: true,
+        introSubText: "RONDE AMAN! SAATNYA NGE-TROLL... 😈",
+        introSubBg: "#00E5FF",
+        minimapZoomScale: 2.3,
+        minimapOriginX: 22,
+        minimapOriginY: 12,
+        minimapStartSec: 13.0,
+        minimapEndSec: 27.0,
+        subtitleFontSize: 36,
+        subtitleColor: "#000000",
+        subtitleBg: "#FFFDF0",
+        showMascot: true,
+        mascotScale: 1.0,
+        punchlineRageText: "EH! B*BI!! 🐷🤬",
+        punchlineReasonText: "PADAHAL GANTI HALF!! 💀🤣",
+        punchlineBgColor: "#FF2A2A",
+        shakeIntensity: 24,
+        showConfetti: true,
+        confettiCount: 24,
+      }}
       width={1080}
       height={1920}
       fps={60}
