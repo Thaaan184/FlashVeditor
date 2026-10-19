@@ -744,7 +744,8 @@ function setVideo(){
   if(previewOn){mode='watch'}
   document.body.classList.toggle('preview',previewOn);
   const k=previewOn?'raw':key(view)+'|'+alt;if(k!==loaded){const t=seekTo??(loaded.split('|')[0]===key(view)?v.currentTime:0);seekTo=null;loaded=k;
-    v.src=previewOn?'/video?k=raw':'/video?k='+key(view)+'&alt='+encodeURIComponent(alt);v.playbackRate=speed;if(t)v.addEventListener('loadedmetadata',()=>v.currentTime=Math.min(t,v.duration||t),{once:true})}
+    const tok=getReviewToken();const tokParam=tok?('&t='+encodeURIComponent(tok)):'';
+    v.src=(previewOn?'/video?k=raw':'/video?k='+key(view)+'&alt='+encodeURIComponent(alt))+tokParam;v.playbackRate=speed;if(t)v.addEventListener('loadedmetadata',()=>v.currentTime=Math.min(t,v.duration||t),{once:true})}
   const opts=cmpOptions();
   if(mode==='compare'&&!opts.length)mode='watch';
   if(mode==='compare'&&(!cmp||!opts.some(o=>o.k===cmp.k&&o.alt===cmp.alt)))cmp=opts.find(o=>o.k!==key(view))||opts[0];
@@ -752,7 +753,7 @@ function setVideo(){
   document.body.classList.toggle('compare',!!cmp);document.body.classList.toggle('canCompare',opts.length>0);
   const k2=cmp?cmp.k+'|'+cmp.alt:'';
   if(k2!==loaded2){loaded2=k2;if(!cmp){v2.pause();v2.removeAttribute('src');v2.load()}
-    else{v2.src='/video?k='+cmp.k+'&alt='+encodeURIComponent(cmp.alt);v2.addEventListener('loadedmetadata',sync2,{once:true})}}}
+    else{const tok=getReviewToken();const tokParam=tok?('&t='+encodeURIComponent(tok)):'';v2.src='/video?k='+cmp.k+'&alt='+encodeURIComponent(cmp.alt)+tokParam;v2.addEventListener('loadedmetadata',sync2,{once:true})}}}
 // the second player follows the first: play, pause, seek, speed. it stays muted.
 function sync2(){if(!cmp||!v2.src)return;v2.playbackRate=v.playbackRate;
   if(Math.abs(v2.currentTime-v.currentTime)>.05)v2.currentTime=Math.min(v.currentTime,v2.duration||v.currentTime);
